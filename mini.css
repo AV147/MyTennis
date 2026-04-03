@@ -1,0 +1,451 @@
+/* ===== MINI MOBILE GAME CSS ===== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 6px;
+  font-size: 13px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#mini-game-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* ===== Header ===== */
+header {
+  background: linear-gradient(135deg, #1a5276, #2e86c1);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#tennis-score {
+  background: rgba(255,255,255,0.15);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ===== Court Section ===== */
+#court-and-dice-section {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+
+#dice-and-court-container {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+#court {
+  flex: 1;
+  display: flex;
+  height: 120px;
+  border: 2px solid #333;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at center, #fff5cc, #ffffee);
+  position: relative;
+  overflow: hidden;
+}
+
+.court-half {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  position: relative;
+}
+
+.court-half.p1-side {
+  border-right: 1px dashed #999;
+}
+
+.zone {
+  border: 1px solid #999;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zone.back-left { grid-column: 1; grid-row: 1 / 3; }
+.zone.back-right { grid-column: 2; grid-row: 1 / 3; }
+.zone.net { grid-column: 1 / 3; grid-row: 3; background: rgba(200, 180, 150, 0.3); }
+
+.court-line {
+  position: absolute;
+  background: #999;
+}
+.court-line.service-line {
+  width: 100%;
+  height: 1px;
+  top: 66.67%;
+  left: 0;
+}
+.court-line.center-line {
+  width: 1px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+}
+
+.player-token {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  color: white;
+  z-index: 10;
+  transition: top 0.3s ease;
+}
+
+.player-token.token-p1 {
+  background: #2980b9;
+  border: 2px solid #1a5276;
+}
+
+.player-token.token-p2 {
+  background: #e74c3c;
+  border: 2px solid #c0392b;
+}
+
+.net-divider {
+  width: 2px;
+  background: #666;
+  margin: 0 2px;
+}
+
+/* ===== Mini Dice ===== */
+.mini-dice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  font-size: 11px;
+  min-width: 50px;
+}
+
+.mini-dice h4 {
+  margin: 0;
+  font-weight: bold;
+  color: #333;
+}
+
+.mini-dice .dice-display {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.die {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px;
+}
+
+.die-dot {
+  width: 3px;
+  height: 3px;
+  background: #333;
+  border-radius: 50%;
+}
+
+.die.power-die {
+  background: #ffebee;
+  border-color: #e74c3c;
+}
+
+.die.power-dot {
+  background: #e74c3c;
+}
+
+.power-die-label {
+  font-size: 10px;
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.dice-info {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+}
+
+/* ===== Last Shot Info ===== */
+.mini-last-shot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px 0;
+  border-top: 1px solid #ddd;
+}
+
+.mini-shot-panel {
+  padding: 6px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.mini-shot-panel strong {
+  display: block;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+/* ===== Player Hand Section ===== */
+#player-hand-section {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+
+.mini-hand-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+#hand-status {
+  margin-left: auto;
+  font-size: 11px;
+  color: #666;
+}
+
+.mini-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+}
+
+.mini-btn-primary {
+  background: #27ae60;
+  color: white;
+}
+
+.mini-btn-primary:hover:not(:disabled) {
+  background: #229954;
+}
+
+.mini-btn-primary:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mini-btn-secondary {
+  background: #3498db;
+  color: white;
+}
+
+.mini-btn-secondary:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.mini-btn-secondary:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mini-hand-container {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mini-card {
+  flex: 0 0 auto;
+  width: 70px;
+  padding: 6px;
+  background: white;
+  border: 2px solid #333;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-card.card-attack {
+  border-color: #c0392b;
+  background: #fff8f8;
+}
+
+.mini-card.card-defense {
+  border-color: #2980b9;
+  background: #f5faff;
+}
+
+.mini-card.card-volley {
+  border-color: #27ae60;
+  background: #f5fff8;
+}
+
+.mini-card.card-serve {
+  border-color: #8e44ad;
+  background: #fdf5ff;
+}
+
+.mini-card.card-hidden {
+  border-color: #999;
+  background: #f0f0f0;
+}
+
+.mini-card:not(.card-blocked):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.mini-card.card-blocked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mini-card-name {
+  font-weight: bold;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.mini-card-stats {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.mini-card-badge {
+  display: inline-block;
+  background: #ddd;
+  color: #333;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+/* ===== Game Log ===== */
+#log-section {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+#log-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+}
+
+.mini-log-panel {
+  max-height: 150px;
+  overflow-y: auto;
+  background: #fafafa;
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #eee;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #333;
+}
+
+.mini-log-panel div {
+  margin-bottom: 4px;
+}
+
+/* ===== Responsive Mobile ===== */
+@media (max-width: 480px) {
+  body {
+    padding: 4px;
+  }
+
+  header {
+    padding: 4px 8px;
+    margin-bottom: 4px;
+  }
+
+  #court {
+    height: 100px;
+  }
+
+  .mini-card {
+    width: 60px;
+    padding: 4px;
+    font-size: 10px;
+  }
+
+  .mini-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 360px) {
+  #court {
+    height: 80px;
+  }
+
+  .mini-card {
+    width: 55px;
+    padding: 3px;
+  }
+
+  .mini-dice {
+    min-width: 40px;
+    font-size: 10px;
+  }
+}
+
+/* ===== Loading Overlay ===== */
+#loading-overlay {
+  font-family: Arial, sans-serif;
+  text-align: center;
+}

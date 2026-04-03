@@ -2,86 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tennis Card Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Tennis Card Game - Mobile</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="mini.css">
 </head>
 <body>
 
-  <header style="text-align: center; margin-bottom: 10px;">
-    <h1 style="font-size: 22px; margin: 6px 0;">🎾 Tennis Card Game</h1>
-
-    <div id="tennis-score" style="margin-bottom: 8px;">Loading score...</div>
-
-    <div style="display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;">
-      <button id="sim-btn"
-        onclick="runSimulation()"
-        style="background:#8e44ad;color:white;font-weight:bold;font-size:13px;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;">
-        ▶ Simulate 10,000 Points
-      </button>
-      <div id="sim-version-controls"></div>
-    </div>
-    <div id="fatigue-toggle" style="background: #fff; padding: 8px 14px; border: 2px solid #333; border-radius: 8px; display: inline-block;">
-      <label style="font-weight: bold; margin-right: 10px; font-size: 13px;">Fatigue System:</label>
-      <label style="margin-right: 15px; font-size: 13px;">
-        <input type="radio" name="fatigue-system" value="1" onchange="switchFatigueSystem(1)">
-        V1 (per Shot)
-      </label>
-      <label style="font-size: 13px;">
-        <input type="radio" name="fatigue-system" value="2" checked onchange="switchFatigueSystem(2)">
-        V2 (per Draw/OOP)
-      </label>
-    </div>
-  </header>
-
-  <!-- Card legend -->
-  <div style="text-align:center; margin-bottom:10px; font-size:12px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;border:3px solid #c0392b;background:#fff8f8;border-radius:3px;display:inline-block;"></span>Attack</span>
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;border:3px solid #2980b9;background:#f5faff;border-radius:3px;display:inline-block;"></span>Defense</span>
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;border:3px solid #27ae60;background:#f5fff8;border-radius:3px;display:inline-block;"></span>Volley</span>
-    <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:14px;border:3px solid #8e44ad;background:#fdf5ff;border-radius:3px;display:inline-block;"></span>Serve</span>
-    <span style="color:#aaa;">| Faded = not playable</span>
+  <!-- Loading indicator -->
+  <div id="loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:1000;font-size:18px;color:white;">
+    Loading game & AI weights...
   </div>
 
-  <main>
-    <div id="players-container">
-      <div id="player1" class="player-panel">
-        <h2>Player 1</h2>
-      </div>
+  <header style="text-align: center; margin-bottom: 8px;">
+    <h1 style="font-size: 18px; margin: 4px 0;">🎾 tennis</h1>
+    <div id="tennis-score" style="margin-bottom: 4px;">Loading score...</div>
+  </header>
 
-      <!-- Current shot info panel -->
-      <div id="current-turn" class="current-turn-panel">
-        <div class="ct-title">Текущий ход</div>
-        <div class="ct-empty">— Подача —</div>
-      </div>
-
-      <div id="player2" class="player-panel">
-        <h2>Player 2</h2>
-      </div>
-    </div>
-
-    <section id="dice-and-court-section">
-      <h2>Dice Rolls &amp; Court Position</h2>
-      <div id="dice-and-court-container">
-        <div class="player-dice" id="player1-dice">
-          <h3>Player 1 Rolls</h3>
-          <div class="dice-display"></div>
+  <main id="mini-game-container">
+    <!-- Court and dice section -->
+    <section id="court-and-dice-section">
+      <div id="dice-and-court-container" style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <div class="player-dice mini-dice" id="player1-dice">
+          <h4 style="margin:0;font-size:11px;">P1</h4>
+          <div class="dice-display" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
         </div>
 
-        <div id="court">
+        <div id="court" style="flex: 1;">
           <div class="court-half p1-side">
-            <!-- Court lines: service line + center service line -->
             <div class="court-line service-line"></div>
             <div class="court-line center-line"></div>
             <div class="zone back-left"  data-id="p1-BL"></div>
             <div class="zone back-right" data-id="p1-BR"></div>
             <div class="zone net"        data-id="p1-Net"></div>
           </div>
-
           <div class="net-divider"></div>
-
           <div class="court-half p2-side">
-            <!-- Court lines: service line + center service line -->
             <div class="court-line service-line"></div>
             <div class="court-line center-line"></div>
             <div class="zone net"        data-id="p2-Net"></div>
@@ -90,19 +46,47 @@
           </div>
         </div>
 
-        <div class="player-dice" id="player2-dice">
-          <h3>Player 2 Rolls</h3>
-          <div class="dice-display"></div>
+        <div class="player-dice mini-dice" id="player2-dice">
+          <h4 style="margin:0;font-size:11px;">P2</h4>
+          <div class="dice-display" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <!-- Last shot info -->
+      <div id="last-shot-info" class="mini-last-shot">
+        <div class="mini-shot-panel">
+          <strong style="font-size:11px;">P1 Last</strong>
+          <div id="p1-last-shot" style="font-size:12px;color:#2980b9;min-height:20px;">—</div>
+        </div>
+        <div class="mini-shot-panel">
+          <strong style="font-size:11px;">P2 Last</strong>
+          <div id="p2-last-shot" style="font-size:12px;color:#e74c3c;min-height:20px;">—</div>
         </div>
       </div>
     </section>
 
-    <section id="log-section">
-      <h2>Game Log</h2>
-      <div id="log" class="log-panel"></div>
+    <!-- Player hand section -->
+    <section id="player-hand-section">
+      <div class="mini-hand-controls">
+        <button id="draw-btn" class="mini-btn mini-btn-primary" onclick="handleMiniDraw()" style="display:none;">
+          Draw
+        </button>
+        <button id="pass-btn" class="mini-btn mini-btn-secondary" onclick="handleMiniPass()" style="display:none;">
+          Pass Turn
+        </button>
+        <span id="hand-status" style="font-size:12px;color:#666;"></span>
+      </div>
+      <div id="mini-hand" class="mini-hand-container"></div>
+    </section>
+
+    <!-- Game log section -->
+    <section id="log-section" style="margin-top: 8px;">
+      <h4 style="margin: 4px 0; font-size: 12px;">Game Log</h4>
+      <div id="log" class="mini-log-panel"></div>
     </section>
   </main>
 
+  <!-- Script imports -->
   <script src="config.js"></script>
   <script src="decks.js"></script>
   <script src="deck-utils.js"></script>
@@ -122,6 +106,7 @@
   <script src="ai-simulate.js"></script>
   <script src="ai-v3-train.js"></script>
   <script src="game.js"></script>
-  <script>renderSimControls(); renderV3TrainUI();</script>
+  <script src="mini-render.js"></script>
+  <script src="mini-game.js"></script>
 </body>
 </html>
