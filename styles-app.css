@@ -180,7 +180,20 @@ html, body {
   color: #aaa;
 }
 
-.app-player-panel .ai-controls { display: none; } /* no AI controls for human */
+/* Show ai-controls but hide non-essential elements for human player */
+.app-player-panel .ai-controls {
+  display: flex;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 6px 0 8px 0;
+  gap: 6px;
+}
+.app-player-panel .ai-label         { display: none; }
+.app-player-panel .ai-version-toggle { display: none; }
+.app-player-panel .ai-btn-turn      { display: none; }
+.app-player-panel .ai-btn-auto,
+.app-player-panel .ai-btn-stop      { display: none; }
 
 /* ── Cards — horizontal scroll row ──────────────── */
 .app-player-panel .hand {
