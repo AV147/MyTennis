@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎾 Tennis Card Game</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-app.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 1 — SCORE BAR
+  ════════════════════════════════════════════ -->
+  <div id="tennis-score">Loading score...</div>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 2 — COURT
+  ════════════════════════════════════════════ -->
+  <div id="app-court-wrap">
+    <div id="court">
+      <div class="court-half p1-side">
+        <div class="court-line service-line"></div>
+        <div class="court-line center-line"></div>
+        <div class="zone back-left"  data-id="p1-BL"></div>
+        <div class="zone back-right" data-id="p1-BR"></div>
+        <div class="zone net"        data-id="p1-Net"></div>
+      </div>
+
+      <div class="net-divider"></div>
+
+      <div class="court-half p2-side">
+        <div class="court-line service-line"></div>
+        <div class="court-line center-line"></div>
+        <div class="zone net"        data-id="p2-Net"></div>
+        <div class="zone back-right" data-id="p2-BR"></div>
+        <div class="zone back-left"  data-id="p2-BL"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 3 — CURRENT TURN + DICE
+  ════════════════════════════════════════════ -->
+  <div id="app-turn-section">
+
+    <!-- Current turn panel (Текущий ход) -->
+    <div id="current-turn" class="current-turn-panel">
+      <div class="ct-title">Текущий ход</div>
+      <div class="ct-empty">— Подача —</div>
+    </div>
+
+    <!-- Dice: player 1 (human) only; player2-dice hidden via CSS but kept for render.js -->
+    <div id="app-dice-wrap">
+      <div class="player-dice" id="player1-dice">
+        <div class="app-dice-label">🎲 Бросок</div>
+        <div class="dice-display"></div>
+      </div>
+      <!-- kept in DOM so render.js doesn't break, but hidden -->
+      <div class="player-dice" id="player2-dice" style="display:none;">
+        <div class="dice-display"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 4 — PLAYER HAND (human = P1)
+  ════════════════════════════════════════════ -->
+  <div id="app-hand-section">
+
+    <!-- AI opponent strip — minimal info rendered by render.js into #player2 -->
+    <div id="player2" class="app-opponent-strip"></div>
+
+    <!-- Human player panel — full hand rendered by render.js into #player1 -->
+    <div id="player1" class="player-panel app-player-panel"></div>
+
+  </div>
+
+  <!-- Log: kept in DOM, hidden from view — render.js requires #log -->
+  <div id="log" style="display:none;"></div>
+
+  <!-- ═══════════════════════════════════════════
+       SCRIPTS — identical to index.html
+  ════════════════════════════════════════════ -->
+  <script src="config.js"></script>
+  <script src="decks.js"></script>
+  <script src="deck-utils.js"></script>
+  <script src="positioning.js"></script>
+  <script src="visuals.js"></script>
+  <script src="dice-visuals.js"></script>
+  <script src="shot-resolution.js"></script>
+  <script src="player-init.js"></script>
+  <script src="render.js"></script>
+  <script src="ai-v1.js"></script>
+  <script src="ai-v2.js"></script>
+  <script src="ai-v3.js"></script>
+  <script src="ai.js"></script>
+  <script src="ai-simulate-v1.js"></script>
+  <script src="ai-simulate-v2.js"></script>
+  <script src="ai-simulate-v3.js"></script>
+  <script src="ai-simulate.js"></script>
+  <script src="ai-v3-train.js"></script>
+  <script src="game.js"></script>
+
+  <script>
+    // ── Telegram Mini App init ──────────────────────────────
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      tg.enableClosingConfirmation();
+      tg.setHeaderColor('#1a5276');
+      tg.setBackgroundColor('#1a1a2e');
+    }
+
+    // ── Load v3 weights from file and configure AI ──────────
+    // Runs after game.js has called startGame() and render()
+    window.addEventListener('load', () => {
+      // Load v3 weights from file
+      fetch('v3-weights(4).json')
+        .then(res => res.json())
+        .then(weightsData => {
+          v3WeightsFromJSON(weightsData);
+          console.log('✓ v3-weights(4).json loaded');
+        })
+        .catch(err => console.warn('Could not load v3-weights(4).json:', err));
+
+      // Configure AI: Player 2 always uses v3 with auto-play
+      aiSetVersion(1, 3);       // P2 uses v3
+      aiSetAutoMode(1, true);   // P2 plays automatically
+    });
+  </script>
+
+</body>
+</html>

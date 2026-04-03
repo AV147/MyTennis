@@ -1,0 +1,266 @@
+/* =====================================================
+   styles-app.css — Telegram Mini App mobile overrides
+   Single-column layout, touch-optimised
+   ===================================================== */
+
+/* ── Reset & base ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background: #1a1a2e;
+  color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ── BLOCK 1 — Score bar ─────────────────────────── */
+#tennis-score {
+  width: 100%;
+  border-radius: 0;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1a5276, #2e86c1);
+  /* safe area for notched phones */
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+#tennis-score .score-points { font-size: 17px; }
+
+/* ── BLOCK 2 — Court ─────────────────────────────── */
+#app-court-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 6px 8px 2px;
+}
+
+/* Make court fluid — scales down on narrow screens */
+#court {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 420 / 270;
+}
+
+/* ── BLOCK 3 — Current turn + dice ──────────────── */
+#app-turn-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+/* Current turn panel fills most of the row */
+#app-turn-section .current-turn-panel {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 8px;
+  background: #1e2a3a;
+  border-color: #4a6fa5;
+  color: #f0f0f0;
+}
+
+.ct-title {
+  color: #aed6f1;
+  border-bottom-color: #4a6fa5;
+}
+
+.ct-card-name { color: #f0f0f0; }
+
+.ct-difficulty {
+  background: #12202f;
+}
+
+.ct-diff-label { color: #aaa; }
+
+/* Dice panel sits alongside current turn */
+#app-dice-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#player1-dice {
+  background: #1e2a3a;
+  border-color: #4a6fa5;
+  padding: 6px 8px;
+  min-width: unset;
+  width: auto;
+}
+
+.app-dice-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #aed6f1;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+/* Scale dice down for compact fit */
+.die {
+  width: 40px;
+  height: 40px;
+}
+
+.die.d3 {
+  width: 30px;
+  height: 30px;
+}
+
+.dice-info {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.dice-total {
+  font-size: 13px;
+}
+
+/* ── BLOCK 4 — Hand section ──────────────────────── */
+#app-hand-section {
+  width: 100%;
+  padding: 0 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Opponent strip (P2, AI) ─────────────────────── */
+.app-opponent-strip {
+  background: #12202f;
+  border: 1px solid #4a6fa5;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #aaa;
+  /* Hide everything from the full panel except the title and stats */
+  overflow: hidden;
+}
+
+/* Show only player title and stats rows from render.js output */
+.app-opponent-strip .player-title { font-size: 14px; color: #f0f0f0; margin: 0 0 4px 0; }
+.app-opponent-strip .player-stats { font-size: 11px; }
+.app-opponent-strip .hand         { display: none; }   /* hide AI cards */
+.app-opponent-strip .draw-btn     { display: none; }
+.app-opponent-strip .ai-controls  { display: none; }   /* hide AI toggles */
+
+/* ── Human player panel (P1) ─────────────────────── */
+.app-player-panel {
+  background: #1e2a3a;
+  border: 1px solid #4a6fa5;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.app-player-panel .player-title {
+  font-size: 14px;
+  color: #f0f0f0;
+  margin: 0 0 4px 0;
+}
+
+.app-player-panel .player-stats {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.app-player-panel .ai-controls { display: none; } /* no AI controls for human */
+
+/* ── Cards — horizontal scroll row ──────────────── */
+.app-player-panel .hand {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  /* smooth momentum scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.app-player-panel .hand::-webkit-scrollbar { display: none; }
+
+/* Card sizing for mobile */
+.app-player-panel .card {
+  flex: 0 0 130px;
+  min-height: 180px;
+  font-size: 11px;
+  padding: 8px;
+  background: #12202f;
+  border-color: #555;
+  color: #f0f0f0;
+}
+
+.app-player-panel .card-attack  { border-color: #c0392b; background: #1e1215; }
+.app-player-panel .card-defense { border-color: #2980b9; background: #111d26; }
+.app-player-panel .card-volley  { border-color: #27ae60; background: #111e16; }
+.app-player-panel .card-serve   { border-color: #8e44ad; background: #19111e; }
+
+.app-player-panel .card-name { color: #f0f0f0; font-size: 11px; }
+.app-player-panel .card-desc { color: #888; font-size: 10px; }
+.app-player-panel .card-stats { color: #ddd; }
+
+/* Play button — full width, easy tap target */
+.app-player-panel .play-btn {
+  padding: 8px;
+  font-size: 13px;
+  min-height: 36px;
+  background: #2980b9;
+}
+.app-player-panel .play-btn:active { background: #1f6391; }
+.app-player-panel .play-btn-disabled {
+  background: #2c3e50 !important;
+  color: #555 !important;
+}
+
+/* Draw button */
+.app-player-panel .draw-btn {
+  width: 100%;
+  padding: 8px;
+  font-size: 13px;
+  min-height: 36px;
+  margin-bottom: 8px;
+  background: #27ae60;
+  border-radius: 8px;
+}
+.app-player-panel .draw-btn:active { background: #1e8449; }
+
+/* Mark checkbox row */
+.app-player-panel .mark-checkbox-row {
+  font-size: 10px;
+  padding: 4px;
+}
+
+/* Position buttons */
+.app-player-panel .position-btn {
+  font-size: 10px;
+  padding: 4px 8px;
+  min-height: 28px;
+}
+
+/* Turn badge */
+.turn-badge { font-size: 10px; }
+
+/* ── Dark theme overrides for shared elements ────── */
+.badge { font-size: 9px; }
+
+.in-pos  { color: #2ecc71; }
+.out-pos { color: #e74c3c; }
+
+/* ── Utility: hide desktop-only elements ─────────── */
+#app-hand-section .ai-badge { display: none; }
