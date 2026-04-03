@@ -68,22 +68,20 @@ function miniRenderDice() {
   p1DiceEl.querySelector('.dice-display').innerHTML = '';
   p2DiceEl.querySelector('.dice-display').innerHTML = '';
 
-  // Display P1's rolls if available
-  if (lastTurnInfo && lastTurnInfo.playerIndex === 0) {
-    const roll = lastTurnInfo.roll || [];
-    roll.forEach(v => {
-      const die = createMinimalDie(v);
-      p1DiceEl.querySelector('.dice-display').appendChild(die);
-    });
-  }
-
-  // Display P2's rolls if available
-  if (lastTurnInfo && lastTurnInfo.playerIndex === 1) {
-    const roll = lastTurnInfo.roll || [];
-    roll.forEach(v => {
-      const die = createMinimalDie(v);
-      p2DiceEl.querySelector('.dice-display').appendChild(die);
-    });
+  // Display stats from last shot if available
+  if (lastTurnInfo) {
+    const targetEl = lastTurnInfo.playerIndex === 0 ? p1DiceEl : p2DiceEl;
+    const diceDisplay = targetEl.querySelector('.dice-display');
+    
+    // Show power + spin as simplified display
+    const powerDie = createMinimalDie(Math.min(lastTurnInfo.power || 0, 6) || 1);
+    const spinDie = createMinimalDie(Math.min(lastTurnInfo.spin || 0, 6) || 1);
+    diceDisplay.appendChild(powerDie);
+    const sep = document.createElement('span');
+    sep.style.cssText = 'font-size:10px;color:#999;margin:0 2px;';
+    sep.textContent = '+';
+    diceDisplay.appendChild(sep);
+    diceDisplay.appendChild(spinDie);
   }
 }
 

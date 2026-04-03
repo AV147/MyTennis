@@ -2,8 +2,16 @@
 // Loads AIv3 weights from JSON, sets up mobile-friendly game
 
 (async () => {
+  const overlay = document.getElementById('loading-overlay');
+  
+  function updateOverlay(msg) {
+    if (overlay) overlay.innerHTML = `<div style="text-align:center;"><p>${msg}</p></div>`;
+    console.log('INIT: ' + msg);
+  }
+
   try {
     // ===== 1. Load AIv3 Weights =====
+    updateOverlay('Loading AIv3 weights from v3-weights(4).json...');
     console.log('Loading AIv3 weights from v3-weights(4).json...');
     const weightsResponse = await fetch('v3-weights(4).json');
     if (!weightsResponse.ok) {
@@ -11,6 +19,7 @@
     }
     const weightsData = await weightsResponse.json();
     console.log('Weights loaded:', Object.keys(weightsData));
+    updateOverlay('Converting weights to Float32Arrays...');
 
     // Verify weight structure
     const requiredKeys = ['W1', 'b1', 'W2', 'b2', 'W_draw', 'b_draw', 'W_card', 'b_card', 'W_disc', 'b_disc', 'W_move', 'b_move'];
@@ -32,25 +41,37 @@
     }
 
     console.log('✓ AIv3 weights successfully loaded and converted');
+    updateOverlay('✓ Weights loaded. Initializing game...');
 
     // ===== 3. Configure Game Settings =====
     // Hardcode fatigue system V2
     FATIGUE_SYSTEM = 2;
     console.log('✓ Fatigue system set to V2 (per draw/OOP)');
 
-    // Force AIv3 for P2, disable AI controls
-    aiVersion = [3, 3]; // Both use v3, but only P2 auto-plays
-    aiAutoMode = [false, true]; // P1 manual, P2 auto
+    // Force AIv3 for both players
+    aiVersion[0] = 3;  // P1 uses v3
+    aiVersion[1] = 3;  // P2 uses v3
+    aiAutoMode[0] = false; // P1 manual
+    aiAutoMode[1] = true;  // P2 auto
 
     console.log('✓ AI configured: P1 manual, P2 auto (v3)');
 
-    // ===== 4. Override render function =====
-    // Replace the main render() with miniRender()
+    // ===== 4. Override render function with mini version =====
+    // Store original render for reference
     window.renderOriginal = window.render;
-    window.render = miniRender;
+    // Replace the main render() with miniRender()
+    window.render = function(players, currentPlayer, gameLog) {
+      try {
+        miniRender(players, currentPlayer, gameLog);
+      } catch (err) {
+        console.error('miniRender error:', err);
+        throw err;
+      }
+    };
     console.log('✓ Mini render function activated');
 
     // ===== 5. Initialize Game State =====
+    updateOverlay('Initializing game state...');
     // Reset game state
     tennisP1Points = 0;
     tennisP2Points = 0;
@@ -85,16 +106,18 @@
     log('Serving: ' + players[servingPlayer].name);
 
     console.log('✓ Players initialized with starting hands');
+    console.log('P1 hand:', players[0].hand.length, 'cards');
+    console.log('P2 hand:', players[1].hand.length, 'cards');
 
     // ===== 7. Initial Render =====
+    updateOverlay('Rendering initial game state...');
     miniRender(players, currentPlayer, gameLog);
     console.log('✓ Initial render complete');
 
     // ===== 8. Hide Loading Overlay =====
-    const loadingOverlay = document.getElementById('loading-overlay');
-    if (loadingOverlay) {
-      loadingOverlay.style.display = 'none';
-    }
+    setTimeout(() => {
+      if (overlay) overlay.style.display = 'none';
+    }, 500);
 
     // ===== 9. Game Loop / Auto-Play Hook =====
     // Set up AI auto-play trigger
@@ -106,10 +129,11 @@
         if (window.gameLoopInterval) clearTimeout(window.gameLoopInterval);
         window.gameLoopInterval = setTimeout(() => {
           try {
+            console.log('Auto-triggering AI play');
             aiPlayTurn(1);
           } catch (err) {
             console.error('AI play error:', err);
-            log('⚠️ AI error, try again');
+            log('⚠️ AI error: ' + err.message);
             miniRender(players, currentPlayer, gameLog);
           }
         }, 500); // Small delay for visual feedback
@@ -121,12 +145,12 @@
 
   } catch (err) {
     console.error('Initialization error:', err);
-    const overlay = document.getElementById('loading-overlay');
     if (overlay) {
       overlay.innerHTML = `
         <div style="text-align: center; color: #fff;">
           <h3>Error loading game</h3>
           <p>${err.message}</p>
+          <p style="font-size: 12px; margin-top: 20px; color: #faa;">Stack: ${err.stack}</p>
           <p style="font-size: 12px; margin-top: 20px;">Please refresh the page.</p>
         </div>
       `;
