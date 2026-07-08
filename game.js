@@ -266,20 +266,24 @@ function applyDropshotPositioning(player, card) {
 }
 
 function applyNormalPositioning(player, card) {
+  // wasLobbed only excuses the very next return — consume it now regardless
+  // of outcome, so a later unrelated out-of-position turn isn't affected by it.
+  const wasLobbed = player.wasLobbed;
+  player.wasLobbed = false;
+
   if (card.approach) {
     player.position = 'Net';
     log(`${player.name} moves to the net`);
     return;
   }
   if (!player.inPosition && card.type === 'return') {
-    if (player.wasLobbed) {
+    if (wasLobbed) {
       log(`${player.name} stays at ${formatPosition(player.position)}`);
     } else {
       updatePositionAfterOutOfPositionReturn(player);
       log(`${player.name} moves to ${formatPosition(player.position)}`);
     }
   }
-  if (player.inPosition && player.wasLobbed) player.wasLobbed = false;
 }
 
 function calcOpponentOutOfPosition(card, player, opponent) {

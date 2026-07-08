@@ -114,6 +114,7 @@ const AIv1 = (() => {
     if (!decision) {
       log(`${player.name} (AI v1) has no playable cards — point lost!`);
       endPoint(1 - playerIndex);
+      render(players, currentPlayer, gameLog);
       return;
     }
 
