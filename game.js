@@ -291,9 +291,9 @@ function applyNormalPositioning(player, card) {
   }
 }
 
-function calcOpponentOutOfPosition(card, player, opponent) {
+function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
   const dir = getShotDirection(card);
-  let oop = willOpponentBeOutOfPosition(player.position, opponent.position, dir);
+  let oop = willOpponentBeOutOfPosition(shooterPosition, opponent.position, dir);
   if (card.targetOpposite) {
     oop = opponent.position !== 'Net'; // always wrong corner unless at net
   } else if (card.target) {
@@ -396,19 +396,20 @@ function playCard(playerIndex, cardIndex) {
     if (!player.inPosition) player.fatigue += v2;
     if (card.type === 'serve') serveAttempt = 1;
 
+    // Shot trajectory and opponent positioning are computed from where the
+    // player actually made contact — capture it before any post-shot
+    // repositioning (e.g. dropshot response always ending at Net) overwrites it.
+    const shotOriginPosition = player.position;
+    const playerSide = playerIndex === 0 ? 'p1' : 'p2';
+    drawShotLine(shotOriginPosition, getTargetPosition(shotOriginPosition, card.type, card, opponent.position), playerSide);
+    opponent.inPosition = !calcOpponentOutOfPosition(card, shotOriginPosition, opponent);
+
     // Positioning
     if (player.positionBeforeDropshot !== null) {
       applyDropshotPositioning(player, card);
     } else {
       applyNormalPositioning(player, card);
     }
-
-    // Shot trajectory
-    const playerSide = playerIndex === 0 ? 'p1' : 'p2';
-    drawShotLine(player.position, getTargetPosition(player.position, card.type, card, opponent.position), playerSide);
-
-    // Opponent positioning
-    opponent.inPosition = !calcOpponentOutOfPosition(card, player, opponent);
 
     // Lob: immediately push net opponent to back position so they can answer correctly
     if (card.antiNet && card.smashable && opponent.position === 'Net') {

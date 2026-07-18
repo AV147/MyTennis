@@ -41,7 +41,7 @@ const AIv1 = (() => {
   }
 
   function opponentDifficulty(card, player, opponent) {
-    const oop = calcOpponentOutOfPosition(card, player, opponent);
+    const oop = calcOpponentOutOfPosition(card, player.position, opponent);
     const powershotExpected = card.powershot ? 3.5 : 0;
     return { outOfPosition: oop, difficulty: card.power + card.spin + powershotExpected };
   }
