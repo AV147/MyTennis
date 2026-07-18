@@ -280,8 +280,13 @@ function applyNormalPositioning(player, card) {
     if (wasLobbed) {
       log(`${player.name} stays at ${formatPosition(player.position)}`);
     } else {
+      const positionBefore = player.position;
       updatePositionAfterOutOfPositionReturn(player);
-      log(`${player.name} moves to ${formatPosition(player.position)}`);
+      if (player.position !== positionBefore) {
+        log(`${player.name} moves to ${formatPosition(player.position)}`);
+      } else {
+        log(`${player.name} stays at ${formatPosition(player.position)}`);
+      }
     }
   }
 }
@@ -489,8 +494,13 @@ function playCard(playerIndex, cardIndex) {
         if (player.wasLobbed) {
           log(`${player.name} stays at ${formatPosition(player.position)}`);
         } else {
+          const positionBefore = player.position;
           updatePositionAfterOutOfPositionReturn(player);
-          log(`${player.name} moves to ${formatPosition(player.position)}`);
+          if (player.position !== positionBefore) {
+            log(`${player.name} moves to ${formatPosition(player.position)}`);
+          } else {
+            log(`${player.name} stays at ${formatPosition(player.position)}`);
+          }
         }
       }
     }
