@@ -57,6 +57,18 @@ function formatPosition(pos) {
   return pos;
 }
 
+// Breaks totalComplexity back down into its terms for the log, e.g. "6+3+1".
+// Returns null when there's nothing to add beyond the total itself (plain serves).
+function formatComplexityBreakdown(info) {
+  const hasIncoming = info.incomingPower !== 0 || info.incomingSpin !== 0 || info.incomingPowershotBonus > 0;
+  const nums = hasIncoming ? [info.incomingPower, info.incomingSpin] : [];
+  if (info.incomingPowershotBonus > 0) nums.push(info.incomingPowershotBonus);
+  nums.push(info.outgoingComplexity);
+  if (info.guidedPenalty > 0) nums.push(info.guidedPenalty);
+  if (nums.length <= 1) return null;
+  return nums.map((n, i) => (i === 0 ? `${n}` : n >= 0 ? `+${n}` : `${n}`)).join('');
+}
+
 function formatTennisScore() {
   const labels = ['0', '15', '30', '40'];
   const p1 = tennisP1Points;
@@ -291,9 +303,9 @@ function applyNormalPositioning(player, card) {
   }
 }
 
-function calcOpponentOutOfPosition(card, player, opponent) {
+function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
   const dir = getShotDirection(card);
-  let oop = willOpponentBeOutOfPosition(player.position, opponent.position, dir);
+  let oop = willOpponentBeOutOfPosition(shooterPosition, opponent.position, dir);
   if (card.targetOpposite) {
     oop = opponent.position !== 'Net'; // always wrong corner unless at net
   } else if (card.target) {
@@ -378,9 +390,12 @@ function playCard(playerIndex, cardIndex) {
   const { v1, v2 } = getFatigueIncrements();
 
   // Build log strings shared between success/miss
-  const posStr  = `${player.inPosition ? 'IN' : 'OUT'} pos (${info.numDice}d6)`;
-  const rollStr = `Roll ${info.diceRoll} - Fat ${info.fatigue}${info.d3Value > 0 ? ` - d3 ${info.d3Value}` : ''} = <strong>${info.skillCheck}</strong>`;
-  const extras  = `${info.d3Value > 0 ? ` | Complex: -${info.d3Value}` : ''}${info.guidedPenalty > 0 ? ` | Guided: +${info.guidedPenalty}` : ''}`;
+  const posStr   = `${player.inPosition ? 'IN' : 'OUT'} pos (${info.numDice}d6)`;
+  const cardStat = `(${info.shotPower}/${info.shotSpin})`;
+  const breakdown = formatComplexityBreakdown(info);
+  const vsStr    = breakdown ? `${info.totalComplexity} (${breakdown})` : `${info.totalComplexity}`;
+  const rollStr  = `Roll ${info.diceRoll} - Fat ${info.fatigue}${info.d3Value > 0 ? ` - d3 ${info.d3Value}` : ''} = <strong>${info.skillCheck}</strong>`;
+  const extras   = `${info.d3Value > 0 ? ` | Complex: -${info.d3Value}` : ''}${info.guidedPenalty > 0 ? ` | Guided: +${info.guidedPenalty}` : ''}`;
 
   if (success) {
     // Pre-roll powershot bonus BEFORE display so the red die shows immediately
@@ -390,11 +405,19 @@ function playCard(playerIndex, cardIndex) {
 
     displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, pendingPowershotBonus);
 
-    log(`${player.name} plays <strong>${card.name}</strong> | ${posStr}${extras}<br>${rollStr} vs ${info.totalComplexity} ✓${pendingPowershotBonus > 0 ? ` | ⚡ Opponent +${pendingPowershotBonus}` : ''}`);
+    log(`${player.name} plays <strong>${card.name}</strong> ${cardStat} | ${posStr}${extras}<br>${rollStr} vs ${vsStr} ✓${pendingPowershotBonus > 0 ? ` | ⚡ Opponent +${pendingPowershotBonus}` : ''}`);
 
     player.fatigue += v1;
     if (!player.inPosition) player.fatigue += v2;
     if (card.type === 'serve') serveAttempt = 1;
+
+    // Shot trajectory and opponent positioning are computed from where the
+    // player actually made contact — capture it before any post-shot
+    // repositioning (e.g. dropshot response always ending at Net) overwrites it.
+    const shotOriginPosition = player.position;
+    const playerSide = playerIndex === 0 ? 'p1' : 'p2';
+    drawShotLine(shotOriginPosition, getTargetPosition(shotOriginPosition, card.type, card, opponent.position), playerSide);
+    opponent.inPosition = !calcOpponentOutOfPosition(card, shotOriginPosition, opponent);
 
     // Positioning
     if (player.positionBeforeDropshot !== null) {
@@ -402,13 +425,6 @@ function playCard(playerIndex, cardIndex) {
     } else {
       applyNormalPositioning(player, card);
     }
-
-    // Shot trajectory
-    const playerSide = playerIndex === 0 ? 'p1' : 'p2';
-    drawShotLine(player.position, getTargetPosition(player.position, card.type, card, opponent.position), playerSide);
-
-    // Opponent positioning
-    opponent.inPosition = !calcOpponentOutOfPosition(card, player, opponent);
 
     // Lob: immediately push net opponent to back position so they can answer correctly
     if (card.antiNet && card.smashable && opponent.position === 'Net') {
@@ -463,7 +479,7 @@ function playCard(playerIndex, cardIndex) {
     // Serve fault
     if (card.type === 'serve') {
       if (serveAttempt === 1) {
-        log(`${player.name} — FAULT! Second serve.`);
+        log(`${player.name} — FAULT with <strong>${card.name}</strong> ${cardStat}! Second serve.<br>${rollStr} vs ${vsStr} ✗`);
         displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0);
         serveAttempt = 2;
         if (pendingGreenDraw) {
@@ -472,7 +488,7 @@ function playCard(playerIndex, cardIndex) {
         }
         render(players, currentPlayer, gameLog);
       } else {
-        log(`${player.name} — DOUBLE FAULT! Point to ${players[1 - playerIndex].name}.`);
+        log(`${player.name} — DOUBLE FAULT with <strong>${card.name}</strong> ${cardStat}! Point to ${players[1 - playerIndex].name}.<br>${rollStr} vs ${vsStr} ✗`);
         displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0);
         endPoint(1 - playerIndex);
         render(players, currentPlayer, gameLog);
@@ -481,7 +497,7 @@ function playCard(playerIndex, cardIndex) {
     }
 
     // Normal miss
-    log(`${player.name} MISSES <strong>${card.name}</strong>! | ${posStr}${extras}<br>${rollStr} vs ${info.totalComplexity} ✗`);
+    log(`${player.name} MISSES <strong>${card.name}</strong> ${cardStat}! | ${posStr}${extras}<br>${rollStr} vs ${vsStr} ✗`);
     displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0);
 
     player.fatigue += v1;

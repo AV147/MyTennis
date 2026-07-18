@@ -38,10 +38,14 @@ function resolveShot(player, card, incomingPower, incomingSpin, incomingCard = n
   const shotSpin  = card.spin  + bonusSpin;
 
   let incomingComplexity = 0;
+  let incomingPowerUsed = 0, incomingSpinUsed = 0, incomingPowershotBonusUsed = 0;
   const outgoingComplexity = shotPower - shotSpin;
 
   if (card.type !== 'serve') {
-    incomingComplexity = incomingPower + incomingSpin + incomingPowershotBonus;
+    incomingPowerUsed = incomingPower;
+    incomingSpinUsed = incomingSpin;
+    incomingPowershotBonusUsed = incomingPowershotBonus;
+    incomingComplexity = incomingPowerUsed + incomingSpinUsed + incomingPowershotBonusUsed;
   }
 
   const guidedPenalty   = card.guided ? 1 : 0;
@@ -66,6 +70,9 @@ function resolveShot(player, card, incomingPower, incomingSpin, incomingCard = n
   player.lastShotInfo = {
     shotPower,
     shotSpin,
+    incomingPower: incomingPowerUsed,
+    incomingSpin: incomingSpinUsed,
+    incomingPowershotBonus: incomingPowershotBonusUsed,
     incomingComplexity,
     outgoingComplexity,
     guidedPenalty,
