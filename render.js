@@ -77,8 +77,9 @@ function render(players, currentPlayer, gameLog) {
     const isAuto   = aiAutoMode[playerIndex];
 
     // When auto mode is on, show card backs instead of card details
+    // (unless AI_HAND_HIDDEN is turned off, e.g. in old_index.html for debugging)
     let cardHtml;
-    if (isAuto) {
+    if (isAuto && AI_HAND_HIDDEN) {
       cardHtml = player.hand.map(() => `
         <div class="card card-hidden">
           <div class="card-back-face">🂠</div>

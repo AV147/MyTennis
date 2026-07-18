@@ -8,6 +8,11 @@ const STARTING_VALUES = {
 
 const HAND_SIZE = 5;
 
+// When true, an AI player's hand is hidden (card backs only) while auto mode
+// is on — this keeps index.html fair for a human opponent. old_index.html
+// overrides this to false so AI hands stay visible for debugging draw logic.
+let AI_HAND_HIDDEN = true;
+
 // Fatigue system: 1 = fatigue per shot played, 2 = fatigue per draw / out-of-position
 let FATIGUE_SYSTEM = 2;
 
