@@ -215,8 +215,21 @@ function simRunPoint(p0, p1, servingPlayerIdx, startPos, engineP0, engineP1) {
     const opponent = players[1 - current];
     const engine   = engines[current];
 
-    // Draw up to engine target if below it
-    simDrawToTarget(player, engine.DRAW_TARGET);
+    // Draw phase. Engines exposing selectDraw() decide per card (v3 has a draw
+    // head); the rest just fill to their target. Without this branch evaluation
+    // would always draw to a full hand and silently ignore v3's draw policy —
+    // training one behaviour and measuring another.
+    if (typeof engine.selectDraw === 'function') {
+      while (player.hand.length < HAND_SIZE) {
+        const hasPlayable = player.hand.some(c => simIsCardPlayable(c, player, incPower, incCard));
+        if (hasPlayable &&
+            !engine.selectDraw(player, opponent, incPower, incSpin, incCard, powershotBonus, serveAttempt))
+          break;
+        simDrawCard(player);
+      }
+    } else {
+      simDrawToTarget(player, engine.DRAW_TARGET);
+    }
 
     if (!player.hand.some(c => simIsCardPlayable(c, player, incPower, incCard))) {
       return { winner: 1 - current, cardsPlayed };
