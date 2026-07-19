@@ -129,13 +129,16 @@
 
     // ── Load v3 weights from file and configure AI ──────────
     window.addEventListener('load', () => {
-      fetch('v3-weights(4).json')
+      // v3-weights(4).json predates the LayerNorm/LeakyReLU change and is not
+      // compatible with the current network — retrain with train-v3-node.js
+      // rather than restoring it.
+      fetch('v3-weights-pure.json')
         .then(res => res.json())
         .then(weightsData => {
           v3WeightsFromJSON(weightsData);
-          console.log('✓ v3-weights(4).json loaded');
+          console.log('✓ v3-weights-pure.json loaded');
         })
-        .catch(err => console.warn('Could not load v3-weights(4).json:', err));
+        .catch(err => console.warn('Could not load v3-weights-pure.json:', err));
 
       aiSetVersion(1, 3);       // P2 uses v3
       aiSetAutoMode(1, true);   // P2 plays automatically

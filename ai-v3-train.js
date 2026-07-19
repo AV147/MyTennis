@@ -4,18 +4,46 @@
 
 // ── Hyperparameters ───────────────────────────────────────────────────────
 const V3_LR        = 0.001;
-const V3_GAMMA     = 0.95;
+const V3_GAMMA     = 0.95;   // win fast / lose slow falls out of the discount
 const V3_BETA1     = 0.9;
 const V3_BETA2     = 0.999;
 const V3_EPS       = 1e-8;
-const V3_GRAD_CLIP = 5.0;
+const V3_GRAD_CLIP = 5.0;    // per-element, kept as a coarse guard
 
-// Rewards
-const V3_R_WIN       =  0.20;
-const V3_R_HIT       =  0.10;
-const V3_R_ACTIVE    =  0.05;   // used red or green active discard
-const V3_R_LOW_CARDS = -0.10;   // < 2 playable cards at play phase
-const V3_R_LOSE      = -0.20;
+// Adam normalises the step to ~±LR regardless of gradient size, so per-element
+// gradient clipping does NOT bound weight growth. Without decay, consistently
+// signed gradients grow weights linearly (~LR per step) until activations
+// saturate every softmax and the policy freezes. These three knobs are what
+// prevent that.
+const V3_WEIGHT_DECAY  = 1e-3;   // decoupled (AdamW-style)
+const V3_ENTROPY_BETA  = 0.01;   // keeps the policy stochastic
+const V3_GLOBAL_CLIP   = 1.0;    // clip by global gradient norm
+const V3_BATCH_POINTS  = 32;     // episodes accumulated per optimiser step
+
+// ── Reward profiles ───────────────────────────────────────────────────────
+// 'pure'  — outcome only. No proxy to game, no bias. γ already encodes
+//           "win fast / lose slow", which is the aggression signal.
+// 'style' — same, plus a small nudge toward the behaviours we actually want:
+//           putting the opponent out of position, and scoring from the net.
+//
+// The old profile rewarded +0.10 per SUCCESSFUL shot, which is an
+// anti-aggression signal: success probability falls as (power − spin) rises,
+// so it paid most for the safest cards and taught net-camping with cheap
+// volleys. Do not reintroduce it.
+const V3_REWARD_PROFILES = {
+  pure: {
+    win: 1.0, lose: -1.0,
+    oop: 0, net: 0
+  },
+  style: {
+    win: 1.0, lose: -1.0,
+    oop: 0.05,   // shot left the opponent out of position (they roll 1d6)
+    net: 0.05    // successful shot played from the net zone
+  }
+};
+
+let V3_REWARD_PROFILE = 'pure';
+function v3Rewards() { return V3_REWARD_PROFILES[V3_REWARD_PROFILE] || V3_REWARD_PROFILES.pure; }
 
 // ── Adam state ────────────────────────────────────────────────────────────
 let v3AdamT = 0;
@@ -67,31 +95,37 @@ function v3Backward(features, fwd, d_out, grads) {
     for (let i = 0; i < V3_H2; i++) d_h2[i] += g * v3W.W_move[i * V3_N_MOVE + j];
   }
 
-  // ReLU @ h2
-  const d_h2_pre = new Float32Array(V3_H2);
-  for (let i = 0; i < V3_H2; i++) d_h2_pre[i] = fwd.h2_pre[i] > 0 ? d_h2[i] : 0;
+  // Leaky ReLU @ h2 — must match v3Relu() in ai-v3.js
+  const d_h2_hat = new Float32Array(V3_H2);
+  for (let i = 0; i < V3_H2; i++) d_h2_hat[i] = fwd.h2_pre[i] > 0 ? d_h2[i] : V3_LEAK * d_h2[i];
 
-  // d_h1 = d_h2_pre @ W2^T
+  // LayerNorm @ h2 — back to the raw linear output
+  const d_h2_lin = v3LayerNormBackward(d_h2_hat, fwd.ln2.xhat, fwd.ln2.invStd);
+
+  // d_h1 = d_h2_lin @ W2^T
   const d_h1 = new Float32Array(V3_H1);
   for (let i = 0; i < V3_H1; i++)
-    for (let j = 0; j < V3_H2; j++) d_h1[i] += d_h2_pre[j] * v3W.W2[i * V3_H2 + j];
+    for (let j = 0; j < V3_H2; j++) d_h1[i] += d_h2_lin[j] * v3W.W2[i * V3_H2 + j];
 
-  // ReLU @ h1
-  const d_h1_pre = new Float32Array(V3_H1);
-  for (let i = 0; i < V3_H1; i++) d_h1_pre[i] = fwd.h1_pre[i] > 0 ? d_h1[i] : 0;
+  // Leaky ReLU @ h1 — must match v3Relu() in ai-v3.js
+  const d_h1_hat = new Float32Array(V3_H1);
+  for (let i = 0; i < V3_H1; i++) d_h1_hat[i] = fwd.h1_pre[i] > 0 ? d_h1[i] : V3_LEAK * d_h1[i];
+
+  // LayerNorm @ h1
+  const d_h1_lin = v3LayerNormBackward(d_h1_hat, fwd.ln1.xhat, fwd.ln1.invStd);
 
   // Accumulate weight gradients
   for (let i = 0; i < V3_N_INPUT; i++) {
     if (!features[i]) continue;
-    for (let j = 0; j < V3_H1; j++) grads.W1[i * V3_H1 + j] += features[i] * d_h1_pre[j];
+    for (let j = 0; j < V3_H1; j++) grads.W1[i * V3_H1 + j] += features[i] * d_h1_lin[j];
   }
-  for (let j = 0; j < V3_H1; j++) grads.b1[j] += d_h1_pre[j];
+  for (let j = 0; j < V3_H1; j++) grads.b1[j] += d_h1_lin[j];
 
   for (let i = 0; i < V3_H1; i++) {
     if (!fwd.h1[i]) continue;
-    for (let j = 0; j < V3_H2; j++) grads.W2[i * V3_H2 + j] += fwd.h1[i] * d_h2_pre[j];
+    for (let j = 0; j < V3_H2; j++) grads.W2[i * V3_H2 + j] += fwd.h1[i] * d_h2_lin[j];
   }
-  for (let j = 0; j < V3_H2; j++) grads.b2[j] += d_h2_pre[j];
+  for (let j = 0; j < V3_H2; j++) grads.b2[j] += d_h2_lin[j];
 
   for (let i = 0; i < V3_H2; i++) {
     if (!fwd.h2[i]) continue;
@@ -107,6 +141,23 @@ function v3Backward(features, fwd, d_out, grads) {
 }
 
 // ── Adam weight update ────────────────────────────────────────────────────
+/** Scale gradients in place so their global L2 norm is at most V3_GLOBAL_CLIP. */
+function v3ClipGlobalNorm(grads) {
+  let sq = 0;
+  for (const k of Object.keys(grads)) {
+    const g = grads[k];
+    for (let i = 0; i < g.length; i++) sq += g[i] * g[i];
+  }
+  const norm = Math.sqrt(sq);
+  if (norm <= V3_GLOBAL_CLIP || norm === 0) return norm;
+  const scale = V3_GLOBAL_CLIP / norm;
+  for (const k of Object.keys(grads)) {
+    const g = grads[k];
+    for (let i = 0; i < g.length; i++) g[i] *= scale;
+  }
+  return norm;
+}
+
 function v3AdamStep(grads) {
   v3AdamT++;
   const bc1 = 1 - Math.pow(V3_BETA1, v3AdamT);
@@ -116,64 +167,137 @@ function v3AdamStep(grads) {
     for (let i = 0; i < w.length; i++) {
       m[i] = V3_BETA1 * m[i] + (1 - V3_BETA1) * g[i];
       v[i] = V3_BETA2 * v[i] + (1 - V3_BETA2) * g[i] * g[i];
+      // Ascent step (gradient is ∇log π · A), then decoupled weight decay.
+      // The decay term is what actually bounds ‖w‖: weights grow only until
+      // the pull of the gradient balances it.
       w[i] += V3_LR * (m[i] / bc1) / (Math.sqrt(v[i] / bc2) + V3_EPS);
+      w[i] -= V3_LR * V3_WEIGHT_DECAY * w[i];
     }
   }
 }
 
-// ── REINFORCE update for one point's trajectory ───────────────────────────
-function v3UpdateFromTrajectory(trajectory, winner, v3PlayerIdx) {
-  if (!trajectory.length) return;
+// ── Entropy gradients ─────────────────────────────────────────────────────
+// Added to the policy gradient so the network is rewarded for staying
+// uncertain. Without this, REINFORCE drives every head to a one-hot policy;
+// once a probability reaches exactly 1.0 the score function (action − prob)
+// is exactly 0 and the head can never recover.
 
-  // Terminal reward on last step
-  trajectory[trajectory.length - 1].reward += winner === v3PlayerIdx ? V3_R_WIN : V3_R_LOSE;
+/** Masked-softmax entropy gradient. Masked-out slots have prob exactly 0. */
+function v3AddEntropyGradSoftmax(probs, out, beta) {
+  let H = 0;
+  for (let j = 0; j < probs.length; j++) {
+    const p = probs[j];
+    if (p > 1e-12) H -= p * Math.log(p);
+  }
+  for (let j = 0; j < probs.length; j++) {
+    const p = probs[j];
+    if (p <= 1e-12) continue;
+    out[j] += beta * (-p * (Math.log(p) + H));
+  }
+  return H;
+}
 
-  // Discounted returns (backwards sweep)
+/** Bernoulli entropy gradient w.r.t. the pre-sigmoid logit: dH/dz = −z·p·(1−p) */
+function v3EntropyGradSigmoid(p, z, beta) {
+  return beta * (-z * p * (1 - p));
+}
+
+// ── Trajectory finishing ──────────────────────────────────────────────────
+/** Applies the terminal reward and computes discounted returns in place. */
+function v3FinishTrajectory(trajectory, winner, v3PlayerIdx) {
+  if (!trajectory.length) return null;
+  const R = v3Rewards();
+  trajectory[trajectory.length - 1].reward += winner === v3PlayerIdx ? R.win : R.lose;
+
   let G = 0;
   for (let t = trajectory.length - 1; t >= 0; t--) {
     G = trajectory[t].reward + V3_GAMMA * G;
     trajectory[t].G = G;
   }
+  return trajectory;
+}
 
-  // Update baseline
-  const mean = trajectory.reduce((s, st) => s + st.G, 0) / trajectory.length;
-  v3Baseline = 0.99 * v3Baseline + 0.01 * mean;
+// ── Batched REINFORCE update ──────────────────────────────────────────────
+// One optimiser step per batch of episodes rather than per episode. Two passes:
+// first collect every return in the batch to standardise advantages, then
+// build gradients. Standardising is what removes the persistently-signed
+// gradients that previously inflated the weights without bound.
+function v3TrainStep(batch) {
+  const steps = [];
+  for (const traj of batch) if (traj) for (const s of traj) steps.push(s);
+  if (!steps.length) return null;
+
+  let sum = 0;
+  for (const s of steps) sum += s.G;
+  const mean = sum / steps.length;
+  let sq = 0;
+  for (const s of steps) sq += (s.G - mean) * (s.G - mean);
+  const std = Math.sqrt(sq / steps.length);
+
+  v3Baseline = mean; // kept for reporting
 
   const grads = v3ZeroGrads();
+  const mon = { maxLogit: 0, entCard: 0, entDisc: 0, entMove: 0, entDraw: 0,
+                nCard: 0, nMove: 0, nDraw: 0, h2Active: 0, h2Count: 0 };
 
-  for (const step of trajectory) {
-    const A = step.G - v3Baseline;   // advantage
-
+  for (const s of steps) {
+    const A = (s.G - mean) / (std + 1e-8);
     const d_out = { d_draw: 0, d_card: null, d_disc: null, d_move: null };
 
-    if (step.type === 'draw') {
-      // sigmoid: ∇ log π = action − prob
-      d_out.d_draw = A * (step.drawAction - step.drawProb);
+    if (s.type === 'draw') {
+      const z = s.fwd.draw_raw[0];
+      d_out.d_draw = A * (s.drawAction - s.drawProb)
+                   + v3EntropyGradSigmoid(s.drawProb, z, V3_ENTROPY_BETA);
+      const p = s.drawProb;
+      if (p > 1e-12 && p < 1 - 1e-12)
+        mon.entDraw += -(p * Math.log(p) + (1 - p) * Math.log(1 - p));
+      mon.nDraw++;
+      mon.maxLogit = Math.max(mon.maxLogit, Math.abs(z));
 
-    } else if (step.type === 'play') {
-      // softmax: ∇ log π_k = δ(i,k) − p_i
+    } else if (s.type === 'play') {
       d_out.d_card = new Float32Array(V3_N_CARD);
       d_out.d_disc = new Float32Array(V3_N_DISC);
       for (let j = 0; j < V3_N_CARD; j++)
-        d_out.d_card[j] = A * ((j === step.cardAction ? 1 : 0) - step.cardProbs[j]);
+        d_out.d_card[j] = A * ((j === s.cardAction ? 1 : 0) - s.cardProbs[j]);
       for (let j = 0; j < V3_N_DISC; j++)
-        d_out.d_disc[j] = A * ((j === step.discAction ? 1 : 0) - step.discProbs[j]);
+        d_out.d_disc[j] = A * ((j === s.discAction ? 1 : 0) - s.discProbs[j]);
+      mon.entCard += v3AddEntropyGradSoftmax(s.cardProbs, d_out.d_card, V3_ENTROPY_BETA);
+      mon.entDisc += v3AddEntropyGradSoftmax(s.discProbs, d_out.d_disc, V3_ENTROPY_BETA);
+      mon.nCard++;
+      for (let j = 0; j < V3_N_CARD; j++)
+        mon.maxLogit = Math.max(mon.maxLogit, Math.abs(s.fwd.card_raw[j]));
 
-    } else if (step.type === 'move') {
+    } else if (s.type === 'move') {
       d_out.d_move = new Float32Array(V3_N_MOVE);
       for (let j = 0; j < V3_N_MOVE; j++)
-        d_out.d_move[j] = A * ((j === step.moveAction ? 1 : 0) - step.moveProbs[j]);
+        d_out.d_move[j] = A * ((j === s.moveAction ? 1 : 0) - s.moveProbs[j]);
+      mon.entMove += v3AddEntropyGradSoftmax(s.moveProbs, d_out.d_move, V3_ENTROPY_BETA);
+      mon.nMove++;
+      for (let j = 0; j < V3_N_MOVE; j++)
+        mon.maxLogit = Math.max(mon.maxLogit, Math.abs(s.fwd.move_raw[j]));
     }
 
-    v3Backward(step.features, step.fwd, d_out, grads);
+    for (let i = 0; i < V3_H2; i++) { mon.h2Count++; if (s.fwd.h2_pre[i] > 0) mon.h2Active++; }
+    v3Backward(s.features, s.fwd, d_out, grads);
   }
 
-  // Normalise by trajectory length before Adam step
-  const n = trajectory.length;
   for (const k of Object.keys(grads))
-    for (let i = 0; i < grads[k].length; i++) grads[k][i] /= n;
+    for (let i = 0; i < grads[k].length; i++) grads[k][i] /= steps.length;
 
+  const gradNorm = v3ClipGlobalNorm(grads);
   v3AdamStep(grads);
+
+  return {
+    steps: steps.length,
+    gradNorm,
+    maxLogit: mon.maxLogit,
+    entCard: mon.nCard ? mon.entCard / mon.nCard : 0,
+    entDisc: mon.nCard ? mon.entDisc / mon.nCard : 0,
+    entMove: mon.nMove ? mon.entMove / mon.nMove : 0,
+    entDraw: mon.nDraw ? mon.entDraw / mon.nDraw : 0,
+    h2ActiveFrac: mon.h2Count ? mon.h2Active / mon.h2Count : 0,
+    returnMean: mean, returnStd: std
+  };
 }
 
 // ── Training point runner ─────────────────────────────────────────────────
@@ -256,9 +380,6 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
       const features = v3EncodeState(opts);
       const fwd      = v3Forward(features);
 
-      const playableCount = player.hand.filter(c => isPlay(c)).length;
-      let playReward = playableCount < 2 ? V3_R_LOW_CARDS : 0;
-
       // Card decision (stochastic)
       const cardMask = sortedItems.map(it => !!(it && isPlay(it.card)));
       const cardProbs = v3Softmax(fwd.card_raw, cardMask);
@@ -282,7 +403,7 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
       player.discard.push(played);
 
       // Active discard
-      let bonusPow = 0, bonusSpin = 0, pendGreen = false, usedActive = false;
+      let bonusPow = 0, bonusSpin = 0, pendGreen = false;
       if (discSlot > 0 && played.type !== 'serve') {
         const di = sortedItems[discSlot - 1];
         if (di) {
@@ -290,9 +411,9 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
           if (adj >= 0 && adj < player.hand.length) {
             const dc = player.hand.splice(adj, 1)[0];
             player.discard.push(dc);
-            if (dc.color === 'red')   { bonusPow = 2; usedActive = true; }
+            if (dc.color === 'red')   bonusPow  = 2;
             if (dc.color === 'blue')  bonusSpin = 1;
-            if (dc.color === 'green') { pendGreen = true; usedActive = true; }
+            if (dc.color === 'green') pendGreen = true;
           }
         }
       }
@@ -310,14 +431,17 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
       psBonus = 0;
       const { v1, v2 } = getFatigueIncrements();
 
-      if (result.success) playReward += V3_R_HIT + (usedActive ? V3_R_ACTIVE : 0);
+      // Zone the shot was actually struck from — captured before any
+      // repositioning rewrites player.position.
+      const posAtShot = player.position;
 
-      trajectory.push({
+      const playStep = {
         type: 'play', features, fwd,
         cardAction: chosenSlot, cardProbs,
         discAction: discSlot,  discProbs,
-        reward: playReward,
-      });
+        reward: 0,   // style bonuses land below, once positioning has resolved
+      };
+      trajectory.push(playStep);
 
       if (result.success) {
         // Fatigue on successful shot
@@ -331,6 +455,15 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
         simApplyOpponentPositioning(played, player, opponent);
         // Lob repositioning fully handled inside simApplyOpponentPositioning
         incPower = result.shotPower; incSpin = result.shotSpin; incCard = played;
+
+        // Style bonuses ('style' profile only; both are 0 under 'pure').
+        // Deliberately keyed to aggression itself, not to landing the shot:
+        // rewarding successful hits favours the LOWEST-complexity cards.
+        {
+          const R = v3Rewards();
+          if (R.net && posAtShot === 'Net')     playStep.reward += R.net;
+          if (R.oop && !opponent.inPosition)    playStep.reward += R.oop;
+        }
 
         // ── Move phase — only when at Net (mirror of live netRetreat) ────
         if (player.position === 'Net' && player.hand.length > 0) {
@@ -385,7 +518,21 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
 
     } else {
       // ── Opponent turn ────────────────────────────────────────────────────
-      simDrawToTarget(player, oppEngine.DRAW_TARGET);
+      // Honour the opponent's own draw policy when it has one. Without this,
+      // self-play is lopsided: the learner uses its draw head while its mirror
+      // image always fills to a full hand, so it trains against a handicapped
+      // copy of itself.
+      if (typeof oppEngine.selectDraw === 'function') {
+        while (player.hand.length < HAND_SIZE) {
+          const hasPlayable = player.hand.some(c => simIsCardPlayable(c, player, incPower, incCard));
+          if (hasPlayable &&
+              !oppEngine.selectDraw(player, opponent, incPower, incSpin, incCard, psBonus, serveAttempt))
+            break;
+          simDrawCard(player);
+        }
+      } else {
+        simDrawToTarget(player, oppEngine.DRAW_TARGET);
+      }
       if (!player.hand.some(c => simIsCardPlayable(c, player, incPower, incCard)))
         return { winner: 1 - current, trajectory };
 
@@ -475,6 +622,8 @@ function trainV3(totalPoints, oppVersionKey, onProgress, onDone) {
   let simP0Points = 0, simP1Points = 0; // game-level point tracking
   let simServingIdx = 0;
 
+  let pending = [];   // finished trajectories awaiting an optimiser step
+
   function batch() {
     if (!v3TrainingActive) { onDone && onDone(stats); return; }
     const bsz = Math.min(100, totalPoints - done);
@@ -482,7 +631,14 @@ function trainV3(totalPoints, oppVersionKey, onProgress, onDone) {
       const startPos = done % 2 === 0 ? 'BR' : 'BL';
       const v3Idx    = done % 4 < 2 ? 0 : 1;
       const { winner, trajectory } = simRunPointV3Train(p0, p1, simServingIdx, startPos, v3Idx, oppEngine);
-      v3UpdateFromTrajectory(trajectory, winner, v3Idx);
+
+      const finished = v3FinishTrajectory(trajectory, winner, v3Idx);
+      if (finished) pending.push(finished);
+      if (pending.length >= V3_BATCH_POINTS) {
+        stats.lastStep = v3TrainStep(pending);
+        pending = [];
+      }
+
       if (winner === v3Idx) stats.wins++;
       stats.points++; done++;
 
@@ -503,6 +659,7 @@ function trainV3(totalPoints, oppVersionKey, onProgress, onDone) {
     }
     onProgress && onProgress(stats, totalPoints);
     if (done >= totalPoints) {
+      if (pending.length) { stats.lastStep = v3TrainStep(pending); pending = []; }
       v3TrainingActive = false;
       v3SaveToLocalStorage();
       onDone && onDone(stats);

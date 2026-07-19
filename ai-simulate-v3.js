@@ -57,6 +57,14 @@ const SimAIv3 = (() => {
     return { cardIdx: chosenItem.origIdx, card: chosenItem.card, discardIdx, discardColor };
   }
 
+  // Draw head — greedy read of the draw policy. Returns true to draw another
+  // card. Mirrors the live AIv3.playTurn draw loop.
+  function selectDraw(player, opponent, incPower, incSpin, incCard, psBonus, serveAttempt) {
+    const opts = v3BuildSimOpts(player, opponent, incPower, incSpin, incCard, psBonus, serveAttempt);
+    const fwd  = v3Forward(v3EncodeState(opts));
+    return v3Sigmoid(fwd.draw_raw[0]) >= 0.5;
+  }
+
   // Move head — called by simRunPoint when player is at Net after shooting.
   // Returns { position } to move to, or null to stay.
   function selectMove(player, opponent, incPower, incSpin, incCard, psBonus, serveAttempt) {
@@ -75,5 +83,5 @@ const SimAIv3 = (() => {
     return { position: V3_MOVE_POSITIONS[moveSlot] };
   }
 
-  return { DRAW_TARGET, selectCard, selectMove };
+  return { DRAW_TARGET, selectCard, selectDraw, selectMove };
 })();

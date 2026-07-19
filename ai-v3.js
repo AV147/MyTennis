@@ -59,9 +59,14 @@ function v3Linear(x, W, b, inSz, outSz) {
   return y;
 }
 
+// Leaky ReLU: a plain ReLU let 21 of 32 second-layer units die permanently
+// (large negative bias → always clamped to 0 → zero gradient → never recovers).
+// The leak keeps a gradient path alive for negative pre-activations.
+const V3_LEAK = 0.01;
+
 function v3Relu(x) {
   const y = new Float32Array(x.length);
-  for (let i = 0; i < x.length; i++) y[i] = x[i] > 0 ? x[i] : 0;
+  for (let i = 0; i < x.length; i++) y[i] = x[i] > 0 ? x[i] : V3_LEAK * x[i];
   return y;
 }
 
@@ -96,13 +101,52 @@ function v3Argmax(arr) {
   return best;
 }
 
+// ── Layer normalisation ────────────────────────────────────────────────────
+// Bounding weight magnitude alone does NOT bound the logits: the network can
+// still align weights so the per-layer sums compound (83→64→32 wide, so a
+// coherent layer multiplies its input several-fold). Normalising each layer's
+// pre-activation to zero mean / unit variance caps head inputs structurally,
+// whatever the weights do. No learnable affine — keeps the parameter set as is.
+const V3_LN_EPS = 1e-5;
+
+function v3LayerNorm(x) {
+  const n = x.length;
+  let mu = 0;
+  for (let i = 0; i < n; i++) mu += x[i];
+  mu /= n;
+  let varr = 0;
+  for (let i = 0; i < n; i++) { const d = x[i] - mu; varr += d * d; }
+  varr /= n;
+  const invStd = 1 / Math.sqrt(varr + V3_LN_EPS);
+  const xhat = new Float32Array(n);
+  for (let i = 0; i < n; i++) xhat[i] = (x[i] - mu) * invStd;
+  return { xhat, invStd };
+}
+
+/** dL/dx given dL/dxhat, for LayerNorm without affine params. */
+function v3LayerNormBackward(dy, xhat, invStd) {
+  const n = dy.length;
+  let mdy = 0, mdyx = 0;
+  for (let i = 0; i < n; i++) { mdy += dy[i]; mdyx += dy[i] * xhat[i]; }
+  mdy /= n; mdyx /= n;
+  const dx = new Float32Array(n);
+  for (let i = 0; i < n; i++) dx[i] = invStd * (dy[i] - mdy - xhat[i] * mdyx);
+  return dx;
+}
+
 // ── Forward pass ───────────────────────────────────────────────────────────
+// Linear → LayerNorm → LeakyReLU, twice.
 function v3Forward(features) {
-  const h1_pre = v3Linear(features, v3W.W1, v3W.b1, V3_N_INPUT, V3_H1);
+  const h1_lin = v3Linear(features, v3W.W1, v3W.b1, V3_N_INPUT, V3_H1);
+  const ln1    = v3LayerNorm(h1_lin);
+  const h1_pre = ln1.xhat;
   const h1     = v3Relu(h1_pre);
-  const h2_pre = v3Linear(h1, v3W.W2, v3W.b2, V3_H1, V3_H2);
+  const h2_lin = v3Linear(h1, v3W.W2, v3W.b2, V3_H1, V3_H2);
+  const ln2    = v3LayerNorm(h2_lin);
+  const h2_pre = ln2.xhat;
   const h2     = v3Relu(h2_pre);
   return {
+    ln1, ln2,
     h1_pre, h1, h2_pre, h2,
     draw_raw:  v3Linear(h2, v3W.W_draw, v3W.b_draw, V3_H2, 1),
     card_raw:  v3Linear(h2, v3W.W_card, v3W.b_card, V3_H2, V3_N_CARD),
