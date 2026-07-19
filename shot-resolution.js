@@ -55,16 +55,17 @@ function resolveShot(player, card, incomingPower, incomingSpin, incomingCard = n
   const { total: diceRoll, diceValues, d3Value } = rollDice(numDice, card.complex);
   const skillCheck = diceRoll - fatigueForThisShot - d3Value;
 
-  // Critical success/failure — override all other calculations
-  // 2 dice: [6,6] always succeeds, [1,1] always fails
-  // 1 die:  6 always succeeds,     1 always fails
+  // Critical success/failure — 2 dice only: [6,6] always succeeds, [1,1]
+  // always fails. Out of position (1 die) there are no crits at all, just the
+  // straight skill check: a single die hits each face 1-in-6, so crits there
+  // would fire far too often.
   let success;
   if (numDice === 2) {
     const isCritS = diceValues[0] === 6 && diceValues[1] === 6;
     const isCritF = diceValues[0] === 1 && diceValues[1] === 1;
     success = isCritS || (!isCritF && skillCheck >= totalComplexity);
   } else {
-    success = diceValues[0] === 6 || (diceValues[0] !== 1 && skillCheck >= totalComplexity);
+    success = skillCheck >= totalComplexity;
   }
 
   player.lastShotInfo = {
