@@ -18,7 +18,7 @@ function render(players, currentPlayer, gameLog) {
       <span class="score-label">Games:</span>
       <span class="score-games">P1: ${gamesWon[0]} — P2: ${gamesWon[1]}</span>
       &nbsp;|&nbsp;
-      <span class="score-server">🎾 Serving: ${players[servingPlayer].name}${serveNote}</span>
+      <span class="score-server">🎾 Подаёт: ${players[servingPlayer].name}${serveNote}</span>
     `;
   }
 
@@ -46,7 +46,7 @@ function render(players, currentPlayer, gameLog) {
 
     const passTurnBtn = canPassTurn
       ? `<button class="ai-btn ai-btn-pass" onclick="aiPassTurn(${playerIndex})"
-           title="Finish repositioning and let AI proceed">✓ Pass Turn</button>`
+           title="Finish repositioning and let AI proceed">✓ Пропустить</button>`
       : '';
 
     return `
@@ -105,10 +105,13 @@ function render(players, currentPlayer, gameLog) {
           card.overhead  && '<span class="badge badge-overhead">Overhead</span>',
         ].filter(Boolean).join('');
 
+        // A card marked for active discard cannot be played itself — uncheck first
         const playBtn = isActive
-          ? `<button class="play-btn${!playable ? ' play-btn-disabled' : ''}"
-               onclick="playCard(${playerIndex},${idx})"
-               ${!playable ? 'disabled' : ''}>${playable ? 'Play' : '✗ Blocked'}</button>`
+          ? (isMarked
+              ? `<button class="play-btn play-btn-disabled" disabled>🔒 В сбросе</button>`
+              : `<button class="play-btn${!playable ? ' play-btn-disabled' : ''}"
+                   onclick="playCard(${playerIndex},${idx})"
+                   ${!playable ? 'disabled' : ''}>${playable ? '▶ Играть' : '✗ Блок'}</button>`)
           : '';
 
         return `
@@ -123,9 +126,9 @@ function render(players, currentPlayer, gameLog) {
                   onchange="markCardForDiscard(${playerIndex}, ${idx}, this.checked)"
                   ${isMarked ? 'checked' : ''}>
                 <span class="mark-label-text mark-label-${card.color}">
-                  ${card.color === 'red'  ? '🔴 +2 Power'  :
-                    card.color === 'blue' ? '🔵 +1 Spin'   :
-                                            '🟢 Free Draw'}
+                  ${card.color === 'red'  ? '🔴 +2 Силы'  :
+                    card.color === 'blue' ? '🔵 +1 Спин'  :
+                                            '🟢 Добор'}
                 </span>
               </label>` : ''}
             ${playBtn}
@@ -135,7 +138,7 @@ function render(players, currentPlayer, gameLog) {
     }
 
     const drawBtn = isActive && !isAuto
-      ? `<button class="draw-btn" onclick="manualDrawCard(${playerIndex})">Draw (${player.hand.length}/${HAND_SIZE})</button>`
+      ? `<button class="draw-btn" onclick="manualDrawCard(${playerIndex})">🃏 Добор (${player.hand.length}/${HAND_SIZE})</button>`
       : '';
 
     const posLabel = player.inPosition

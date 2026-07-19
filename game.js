@@ -328,6 +328,13 @@ function playCard(playerIndex, cardIndex) {
   const opponent = players[1 - playerIndex];
   const card     = player.hand[cardIndex];
 
+  // A card marked for active discard cannot be played itself — uncheck it first
+  if (markedCardIndices[playerIndex] === cardIndex) {
+    log(`${player.name} cannot play ${card.name} — it is marked for discard! Uncheck it first.`);
+    render(players, currentPlayer, gameLog);
+    return;
+  }
+
   // Pre-play state: track dropshot response origin
   const respondingToDropshot = incomingCard && incomingCard.dropshot && player.position !== 'Net';
   if (respondingToDropshot) player.positionBeforeDropshot = player.position;
