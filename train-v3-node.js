@@ -8,11 +8,16 @@
  *
  * Usage:
  *   node train-v3-node.js [--points N] [--profile pure|style] [--opp v1|v2|self]
- *                         [--out FILE] [--seed N] [--evals N] [--quiet]
+ *                         [--out FILE] [--resume FILE] [--seed N] [--evals N] [--quiet]
  *
  * Examples:
- *   node train-v3-node.js --points 200000 --profile pure  --out v3-weights-pure.json
- *   node train-v3-node.js --points 200000 --profile style --out v3-weights-style.json
+ *   # phase 1 — bootstrap against the heuristic
+ *   node train-v3-node.js --points 200000 --opp v2 --out w-p1.json
+ *   # phase 2 — self-play, continuing from phase 1
+ *   node train-v3-node.js --points 300000 --opp self --resume w-p1.json --out w-p2.json
+ *
+ * Without --resume the weights are reinitialised, so every run starts from
+ * scratch — use it to chain training phases.
  *
  * Prints a learning curve with the health metrics that matter for this network:
  *   maxLogit — pre-softmax magnitude. If this climbs past ~50 the policy is
@@ -44,6 +49,7 @@ const OPTS = {
   profile: String(arg('profile', 'pure')),
   opp:     String(arg('opp', 'v2')),
   out:     String(arg('out', '')),
+  resume:  String(arg('resume', '')),
   seed:    Number(arg('seed', 20260719)),
   evals:   Number(arg('evals', 10)),
   quiet:   !!arg('quiet', false)
@@ -69,10 +75,13 @@ function __mkRandom(seed) {
 }
 
 /** Synchronous training loop — trainV3() is setTimeout-driven for the browser. */
-function trainSync(totalPoints, oppKey, profile, seed, onChunk, chunkSize) {
+function trainSync(totalPoints, oppKey, profile, seed, onChunk, chunkSize, resumeJson) {
   V3_REWARD_PROFILE = profile;
   Math.random = __mkRandom(seed);
-  v3InitWeights();
+  // Resuming keeps the weights but always restarts Adam: its moment estimates
+  // describe the previous phase's gradients and carrying them into a new
+  // opponent would fight the first few hundred steps.
+  if (resumeJson) v3WeightsFromJSON(resumeJson); else v3InitWeights();
   v3AdamInit();
   v3Baseline = 0;
 
@@ -182,10 +191,17 @@ ctx.__onChunk = (done, wins, step) => {
   );
 };
 
+if (OPTS.resume) {
+  ctx.__resume = JSON.parse(fs.readFileSync(path.join(ROOT, OPTS.resume), 'utf8'));
+  if (!OPTS.quiet) console.log(`  продолжаю с весов: ${OPTS.resume}\n`);
+} else {
+  ctx.__resume = null;
+}
+
 const t0 = Date.now();
 const result = vm.runInContext(
   `trainSync(${OPTS.points}, ${JSON.stringify(OPTS.opp)}, ${JSON.stringify(OPTS.profile)}, ` +
-  `${OPTS.seed}, __onChunk, ${chunk})`, ctx, { timeout: 3600000 });
+  `${OPTS.seed}, __onChunk, ${chunk}, __resume)`, ctx, { timeout: 3600000 });
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 
 const final = vm.runInContext(`evalVsV2(20000, 909090)`, ctx);

@@ -518,7 +518,21 @@ function simRunPointV3Train(p0, p1, servingIdx, startPos, v3Idx, oppEngine) {
 
     } else {
       // ── Opponent turn ────────────────────────────────────────────────────
-      simDrawToTarget(player, oppEngine.DRAW_TARGET);
+      // Honour the opponent's own draw policy when it has one. Without this,
+      // self-play is lopsided: the learner uses its draw head while its mirror
+      // image always fills to a full hand, so it trains against a handicapped
+      // copy of itself.
+      if (typeof oppEngine.selectDraw === 'function') {
+        while (player.hand.length < HAND_SIZE) {
+          const hasPlayable = player.hand.some(c => simIsCardPlayable(c, player, incPower, incCard));
+          if (hasPlayable &&
+              !oppEngine.selectDraw(player, opponent, incPower, incSpin, incCard, psBonus, serveAttempt))
+            break;
+          simDrawCard(player);
+        }
+      } else {
+        simDrawToTarget(player, oppEngine.DRAW_TARGET);
+      }
       if (!player.hand.some(c => simIsCardPlayable(c, player, incPower, incCard)))
         return { winner: 1 - current, trajectory };
 
