@@ -148,9 +148,10 @@ function render(players, currentPlayer, gameLog) {
     return `
       <h2 class="player-title">${player.name}${isActive ? ' <span class="turn-badge">Ход</span>' : ''}${isAuto ? ' <span class="ai-badge">🤖 AI v' + aiVersion[playerIndex] + '</span>' : ''}</h2>
       <div class="player-stats">
-        <span><strong>Fatigue:</strong> ${player.fatigue} <em>[${fatigueLabel}]</em></span>
-        <span><strong>Pos:</strong> ${player.position} ${posLabel}</span>
-        <span><strong>Deck:</strong> ${player.deck.length} | <strong>Disc:</strong> ${player.discard.length}</span>
+        <span class="st-fat"><strong>Fatigue:</strong> ${player.fatigue} <em>[${fatigueLabel}]</em></span>
+        <span class="st-pos"><strong>Pos:</strong> ${player.position} ${posLabel}</span>
+        <span class="st-deck"><strong>Deck:</strong> ${player.deck.length} | <strong>Disc:</strong> ${player.discard.length}</span>
+        <span class="st-hand"><strong>Рука:</strong> ${player.hand.length}</span>
       </div>
       ${renderAiControls(playerIndex)}
       ${drawBtn}

@@ -327,7 +327,8 @@ function v3CalcProb(player, card, incPower, incSpin, incCard, psBonus) {
     } else {
       for (let a = 1; a <= 6; a++) {
         combos++;
-        if (a===6 || (a!==1 && 6+a-fat-d3 >= total)) succ++;
+        // No crits on a single die — mirrors resolveShot()
+        if (6+a-fat-d3 >= total) succ++;
       }
     }
   }

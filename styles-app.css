@@ -22,8 +22,12 @@ body {
   font-size: 14px;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  overflow: hidden;
+  /* min-height, not height: the layout fills the screen when it fits and
+     scrolls instead of clipping the hand when it doesn't (reposition buttons
+     make the cards noticeably taller mid-rally). */
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
@@ -402,15 +406,19 @@ button { font-family: inherit; }
   flex-direction: column;
 }
 
+/* Single line: name, AI badge, then stats. Card backs carry no information
+   and cost ~55px of height the hand section needs on short screens. */
 .app-opponent-strip {
   flex: 0 0 auto;
   background: #12202f;
   border-top: 1px solid #2a4a6a;
   border-bottom: 1px solid #2a4a6a;
-  padding: 5px 10px;
+  padding: 4px 10px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
   overflow: hidden;
 }
 .app-opponent-strip .player-title {
@@ -419,57 +427,42 @@ button { font-family: inherit; }
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   margin: 0;
+  flex: 0 0 auto;
 }
 .app-opponent-strip .player-stats {
   display: flex;
-  gap: 4px 10px;
+  align-items: center;
+  gap: 2px 8px;
   flex-wrap: wrap;
   font-size: 10px;
   color: #8ab0cc;
   margin: 0;
+  min-width: 0;
 }
 .app-opponent-strip .player-stats em { display: none; }  /* fatigue system tag */
-.app-opponent-strip .ai-controls { display: none; }
-.app-opponent-strip .draw-btn    { display: none; }
+.app-opponent-strip .ai-controls,
+.app-opponent-strip .draw-btn,
+.app-opponent-strip .hand { display: none; }
 
-/* AI hand → row of mini card backs */
-.app-opponent-strip .hand {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-.app-opponent-strip .card {
-  flex: 0 0 34px;
-  width: 34px; height: 46px;
-  min-height: 46px;
-  border-radius: 6px;
-  padding: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.app-opponent-strip .card-hidden {
-  background: linear-gradient(135deg, #1a2a4a 0%, #0d1a30 100%);
-  border: 1.5px solid #2a4a7a;
-  box-shadow: 0 2px 6px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.07);
-}
-.app-opponent-strip .card-back-face {
-  font-size: 18px;
-  color: rgba(255,255,255,.25);
-  opacity: 1;
-}
-/* if AI hand ever rendered open (debug), keep cards tiny and clipped */
-.app-opponent-strip .card-name, .app-opponent-strip .card-desc,
-.app-opponent-strip .card-stats, .app-opponent-strip .card-badges,
-.app-opponent-strip .mark-checkbox-row, .app-opponent-strip .play-btn,
-.app-opponent-strip .discard-move { display: none; }
+/* Word labels don't fit one line at 360px (433px needed for 340px of room),
+   so the strip swaps them for icons. The player's own panel below keeps the
+   spelled-out labels. */
+.app-opponent-strip .player-stats strong { display: none; }
+.app-opponent-strip .st-fat::before  { content: '💤'; margin-right: 3px; }
+.app-opponent-strip .st-deck::before { content: '🂠'; margin-right: 3px; }
+.app-opponent-strip .st-hand::before { content: '✋'; margin-right: 3px; }
+.app-opponent-strip .st-pos          { font-weight: 600; color: #a8c8e4; }
 
 /* ═══════════════════════════════════════════════════
    5. PLAYER HAND  (render.js fills #player1)
    ═══════════════════════════════════════════════════ */
 .app-player-panel {
   flex: 1;
-  min-height: 0;
+  /* Floor so the hand can't be squeezed to the point of clipping cards —
+     header + draw button + a full-height card. Past this the page scrolls. */
+  min-height: 268px;
   background: #1a2233;
   border-top: 1px solid #3a5a80;
   display: flex;
@@ -598,7 +591,7 @@ button { font-family: inherit; }
   flex: 0 0 132px;
   height: 100%;
   min-height: 150px;
-  max-height: 185px;
+  max-height: 215px;   /* headroom for the reposition buttons */
   border-radius: 10px;
   border: 2px solid #555;
   padding: 8px;

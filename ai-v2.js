@@ -34,7 +34,8 @@ const AIv2 = (() => {
       } else {
         for (let d1 = 1; d1 <= 6; d1++) {
           totalCombos++;
-          if (d1 === 6 || (d1 !== 1 && 6 + d1 - fatigue - d3 >= totalComplexity)) successCount++;
+          // No crits on a single die — mirrors resolveShot()
+          if (6 + d1 - fatigue - d3 >= totalComplexity) successCount++;
         }
       }
     }
