@@ -87,7 +87,7 @@ button { font-family: inherit; }
    ═══════════════════════════════════════════════════ */
 #app-court-wrap {
   flex: 0 0 auto;
-  padding: 8px 12px 4px;
+  padding: 5px 12px 3px;
 }
 
 #court {
@@ -238,7 +238,7 @@ button { font-family: inherit; }
   display: flex;
   align-items: stretch;
   gap: 8px;
-  padding: 4px 10px;
+  padding: 3px 10px;
 }
 
 /* Turn panel — compact, rows laid out left-to-right */
@@ -458,23 +458,32 @@ button { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
+  padding: 4px 10px;
   background: #12202f;
   border-top: 1px solid #23384a;
-  font-size: 11px;
   color: #a8c8e4;
   cursor: pointer;
 }
-#app-log .app-log-icon { flex: 0 0 auto; opacity: .8; }
-#app-log .app-log-line {
+#app-log .app-log-icon { flex: 0 0 auto; opacity: .8; align-self: center; }
+#app-log .app-log-lines {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+#app-log .app-log-line {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 10.5px;
+  line-height: 1.32;
 }
+/* older line dimmer, newest brighter */
+#app-log .app-log-line:first-child:not(:last-child) { color: #7791a8; }
+#app-log .app-log-line:last-child { color: #cddeee; }
 #app-log .app-log-line strong { color: #e8f2ff; font-weight: 700; }
-#app-log .app-log-more { flex: 0 0 auto; color: #5a7a9a; font-size: 9px; }
+#app-log .app-log-more { flex: 0 0 auto; color: #5a7a9a; font-size: 9px; align-self: center; }
 
 #log-overlay {
   position: fixed;
@@ -896,11 +905,11 @@ button { font-family: inherit; }
 .scroll-hint {
   flex-shrink: 0;
   text-align: center;
-  font-size: 9px;
+  font-size: 8.5px;
   color: #3a5a7a;
   letter-spacing: 0.06em;
-  padding: 2px 0;
-  padding-bottom: max(4px, env(safe-area-inset-bottom));
+  padding: 0;
+  padding-bottom: max(2px, env(safe-area-inset-bottom));
 }
 
 /* ═══════════════════════════════════════════════════

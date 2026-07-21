@@ -78,7 +78,9 @@
   ════════════════════════════════════════════ -->
   <div id="app-log" onclick="toggleLogOverlay(true)" title="Открыть журнал">
     <span class="app-log-icon">📋</span>
-    <span class="app-log-line">— начните розыгрыш —</span>
+    <div class="app-log-lines">
+      <div class="app-log-line">— начните розыгрыш —</div>
+    </div>
     <span class="app-log-more">▲</span>
   </div>
 
@@ -142,10 +144,14 @@
     // The ticker shows the most recent line; tapping opens the full history.
     function renderMobileLog() {
       if (typeof gameLog === 'undefined') return;
-      const line = document.querySelector('#app-log .app-log-line');
-      // Collapse the <br> inside shot lines so the ticker stays a single row.
-      if (line && gameLog.length)
-        line.innerHTML = gameLog[gameLog.length - 1].replace(/<br\s*\/?>/gi, ' · ');
+      const box = document.querySelector('#app-log .app-log-lines');
+      // Last two events, oldest on top / newest at the bottom. Each stays one
+      // row (the <br> inside shot lines is collapsed to a middot).
+      if (box && gameLog.length) {
+        box.innerHTML = gameLog.slice(-2)
+          .map(s => `<div class="app-log-line">${s.replace(/<br\s*\/?>/gi, ' · ')}</div>`)
+          .join('');
+      }
       const overlay = document.getElementById('log-overlay');
       if (overlay && overlay.classList.contains('open')) {
         document.getElementById('log-full').innerHTML =
