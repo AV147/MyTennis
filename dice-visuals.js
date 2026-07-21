@@ -60,26 +60,20 @@ function displayDiceRoll(playerIndex, diceValues, total, fatigue, skillCheck, d3
   const diceDisplay = playerDiceEl.querySelector('.dice-display');
   diceDisplay.innerHTML = '';
 
-  // Who rolled — only meaningful when both players share one block
-  if (window.DICE_SINGLE_TARGET && typeof players !== 'undefined' && players[playerIndex]) {
-    const who = document.createElement('div');
-    who.className = 'dice-roller';
-    who.textContent = players[playerIndex].name;
-    diceDisplay.appendChild(who);
+  // On the shared mobile block, name the roller in the header: "🎲 Бросок — Игрок 2"
+  const rollerName = (typeof players !== 'undefined' && players[playerIndex]) ? players[playerIndex].name : '';
+  if (window.DICE_SINGLE_TARGET) {
+    const label = playerDiceEl.querySelector('.app-dice-label');
+    if (label) label.innerHTML = '🎲 Бросок' + (rollerName ? ` — <span class="dice-roller">${rollerName}</span>` : '');
   }
 
-  // Skill check dice
-  diceValues.forEach(v => diceDisplay.appendChild(createDieElement(v)));
-  if (d3Value > 0) diceDisplay.appendChild(createD3Element(d3Value));
-
-  // Power die (opponent bonus) — shown separately with a label
-  if (powershotBonus > 0) {
-    const sep = document.createElement('div');
-    sep.className = 'power-die-label';
-    sep.textContent = '+ сопернику:';
-    diceDisplay.appendChild(sep);
-    diceDisplay.appendChild(createPowerDieElement(powershotBonus));
-  }
+  // Dice faces in a horizontal row (skill dice, then d3, then the red power die)
+  const faces = document.createElement('div');
+  faces.className = 'dice-faces';
+  diceValues.forEach(v => faces.appendChild(createDieElement(v)));
+  if (d3Value > 0) faces.appendChild(createD3Element(d3Value));
+  if (powershotBonus > 0) faces.appendChild(createPowerDieElement(powershotBonus));
+  diceDisplay.appendChild(faces);
 
   // Info text
   const infoDiv = document.createElement('div');

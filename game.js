@@ -10,8 +10,8 @@ let pointCount = 0;
 
 // ===== GLOBAL RALLY STATE =====
 const players = [
-  createPlayer('Player 1', 0),
-  createPlayer('Player 2', 1)
+  createPlayer('Игрок 1', 0),
+  createPlayer('Игрок 2', 1)
 ];
 
 let currentPlayer = 0;

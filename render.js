@@ -214,10 +214,14 @@ function renderCurrentTurnPanel() {
     </div>`;
 
   el.innerHTML = `
-    <div class="ct-title">Текущий ход</div>
-    <div class="ct-arrow-row">${arrow}</div>
-    <div class="ct-card-name">${cardName}</div>
-    <div class="ct-card-stats"><span>⚡${power}</span><span>🌀${spin}</span></div>
+    <div class="ct-head">
+      <div class="ct-title">Текущий ход</div>
+      <div class="ct-arrow-row">${arrow}</div>
+    </div>
+    <div class="ct-name-row">
+      <span class="ct-card-name">${cardName}</span>
+      <span class="ct-card-stats"><span>⚡${power}</span><span>🌀${spin}</span></span>
+    </div>
     ${badges ? `<div class="card-badges">${badges}</div>` : ''}
     ${diffHtml}
   `;

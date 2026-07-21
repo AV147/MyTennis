@@ -380,6 +380,10 @@ body {
   justify-content: center; align-items: center;
   gap: 8px; min-height: 60px;
 }
+.dice-faces {
+  display: flex; flex-flow: row wrap;
+  justify-content: center; align-items: center; gap: 8px;
+}
 
 /* ===== Dice ===== */
 .die {
