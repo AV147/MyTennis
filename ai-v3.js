@@ -456,13 +456,13 @@ const AIv3 = (() => {
       }
       drawCard(player, log);
       markedCardIndices[playerIndex] = -1;
-      log(`${player.name} (AI v3) draws (${player.hand.length}/${DRAW_TARGET})`);
+      log(`${player.name} (ИИ v3) берёт карту (${player.hand.length}/${DRAW_TARGET}, +1 усталости)`);
     }
     render(players, currentPlayer, gameLog);
 
     const decision = selectPlay(playerIndex);
     if (!decision) {
-      log(`${player.name} (AI v3) has no playable cards — point lost!`);
+      log(`У ${player.name} (ИИ v3) нет ходов — очко проиграно!`);
       endPoint(1 - playerIndex);
       render(players, currentPlayer, gameLog);
       return;
@@ -472,7 +472,7 @@ const AIv3 = (() => {
 
     const card = player.hand[decision.cardIndex];
     const prob = v3CalcProb(player, card, incomingPower, incomingSpin, incomingCard, pendingPowershotBonus);
-    log(`${player.name} (AI v3) → <strong>${card.name}</strong> (${(prob * 100).toFixed(0)}%)`);
+    log(`${player.name} (ИИ v3) → <strong>${card.name}</strong> (${(prob * 100).toFixed(0)}%)`);
     playCard(playerIndex, decision.cardIndex);
     netRetreat(playerIndex);
   }

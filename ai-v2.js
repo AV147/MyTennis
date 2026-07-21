@@ -130,13 +130,13 @@ const AIv2 = (() => {
     while (player.hand.length < DRAW_TARGET) {
       drawCard(player, log);
       markedCardIndices[playerIndex] = -1;
-      log(`${player.name} (AI v2) draws a card (${player.hand.length}/${DRAW_TARGET})`);
+      log(`${player.name} (ИИ v2) берёт карту (${player.hand.length}/${DRAW_TARGET}, +1 усталости)`);
     }
     render(players, currentPlayer, gameLog);
 
     const decision = selectPlay(playerIndex);
     if (!decision) {
-      log(`${player.name} (AI v2) has no playable cards — point lost!`);
+      log(`У ${player.name} (ИИ v2) нет ходов — очко проиграно!`);
       endPoint(1 - playerIndex);
       render(players, currentPlayer, gameLog);
       return;
@@ -144,7 +144,7 @@ const AIv2 = (() => {
 
     if (decision.markIndex !== -1) markCardForDiscard(playerIndex, decision.markIndex, true);
 
-    log(`${player.name} (AI v2) → <strong>${decision.card.name}</strong> (${(decision.prob * 100).toFixed(0)}% success)`);
+    log(`${player.name} (ИИ v2) → <strong>${decision.card.name}</strong> (${(decision.prob * 100).toFixed(0)}%)`);
     playCard(playerIndex, decision.cardIndex);
     netRetreat(playerIndex);
   }

@@ -396,6 +396,101 @@ button { font-family: inherit; }
 .power-die-label { font-size: 9px; color: #8ab0cc; }
 .power-die-info  { color: #ff7050; font-weight: 700; font-size: 10px; }
 
+.dice-roller {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #c8e0f8;
+  text-transform: uppercase;
+}
+.dice-result {
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.dice-result.dice-ok   { color: #80f0a0; background: rgba(39,174,96,.18);  border: 1px solid #27ae60; }
+.dice-result.dice-fail { color: #ff8070; background: rgba(192,57,43,.18);  border: 1px solid #c0392b; }
+
+/* ═══════════════════════════════════════════════════
+   3.5 LOG — ticker + full-history overlay
+   ═══════════════════════════════════════════════════ */
+#app-log {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #12202f;
+  border-top: 1px solid #23384a;
+  font-size: 11px;
+  color: #a8c8e4;
+  cursor: pointer;
+}
+#app-log .app-log-icon { flex: 0 0 auto; opacity: .8; }
+#app-log .app-log-line {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#app-log .app-log-line strong { color: #e8f2ff; font-weight: 700; }
+#app-log .app-log-more { flex: 0 0 auto; color: #5a7a9a; font-size: 9px; }
+
+#log-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(5,10,20,.72);
+  display: none;
+  align-items: flex-end;
+}
+#log-overlay.open { display: flex; }
+.log-sheet {
+  width: 100%;
+  max-height: 72vh;
+  background: #16222f;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-top: 1px solid #3a5a80;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.5);
+}
+.log-sheet-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #24384a;
+  color: #e8f2ff;
+  font-size: 14px;
+}
+.log-close {
+  background: none;
+  border: none;
+  color: #8ab0cc;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.log-sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b8ccdc;
+  -webkit-overflow-scrolling: touch;
+}
+.log-sheet-body strong { color: #e8f2ff; font-weight: 700; }
+.log-sheet-body .log-sep { height: 1px; background: #20323f; margin: 7px 0; }
+
 /* ═══════════════════════════════════════════════════
    4. AI STRIP  (render.js fills #player2)
    ═══════════════════════════════════════════════════ */

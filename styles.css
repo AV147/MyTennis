@@ -443,6 +443,10 @@ body {
 
 .dice-info { margin-top: 8px; font-size: 12px; color: #666; line-height: 1.3; }
 .dice-total { font-size: 16px; font-weight: bold; margin-top: 4px; color: #ffffff; }
+.dice-roller { font-size: 12px; font-weight: bold; color: #555; }
+.dice-result { margin-top: 4px; font-size: 14px; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
+.dice-result.dice-ok   { color: #1e8449; background: #eafaf1; }
+.dice-result.dice-fail { color: #c0392b; background: #fdedec; }
 
 /* ===== AI Controls ===== */
 .ai-controls {
