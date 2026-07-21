@@ -10,8 +10,8 @@ let pointCount = 0;
 
 // ===== GLOBAL RALLY STATE =====
 const players = [
-  createPlayer('Player 1', 0),
-  createPlayer('Player 2', 1)
+  createPlayer('Игрок 1', 0),
+  createPlayer('Игрок 2', 1)
 ];
 
 let currentPlayer = 0;
@@ -52,8 +52,9 @@ function switchFatigueSystem(system) {
 }
 
 function formatPosition(pos) {
-  if (pos === 'BR') return 'Back Right';
-  if (pos === 'BL') return 'Back Left';
+  if (pos === 'BR')  return 'Справа';
+  if (pos === 'BL')  return 'Слева';
+  if (pos === 'Net') return 'Сетка';
   return pos;
 }
 
@@ -109,23 +110,24 @@ function getCardCategory(card) {
 
 function manualDrawCard(playerIndex) {
   if (playerIndex !== currentPlayer) {
-    log(`Not ${players[playerIndex].name}'s turn!`);
+    log(`Сейчас не ход ${players[playerIndex].name}!`);
     render(players, currentPlayer, gameLog);
     return;
   }
   const player = players[playerIndex];
   if (player.hand.length >= HAND_SIZE) {
-    log(`${player.name} already has ${HAND_SIZE} cards!`);
+    log(`У ${player.name} уже ${HAND_SIZE} карт!`);
     render(players, currentPlayer, gameLog);
     return;
   }
 
+  const { v2 } = getFatigueIncrements();
   drawCard(player, log);
-  log(`${player.name} draws a card`);
+  log(`${player.name} берёт карту${v2 > 0 ? ' (+1 усталости)' : ''}`);
   markedCardIndices[playerIndex] = -1; // drawing clears any active mark
 
   if (isTrulyStuck(player)) {
-    log(`${player.name} has a full hand with no playable cards — point lost!`);
+    log(`У ${player.name} полная рука без ходов — очко проиграно!`);
     endPoint(1 - playerIndex);
     render(players, currentPlayer, gameLog);
     return;
@@ -136,13 +138,13 @@ function manualDrawCard(playerIndex) {
 
 function discardForPosition(playerIndex, cardIndex, newPosition) {
   if (canDiscardForPosition !== playerIndex) {
-    log(`${players[playerIndex].name} cannot discard right now!`);
+    log(`${players[playerIndex].name} сейчас не может сбрасывать для перебежки!`);
     render(players, currentPlayer, gameLog);
     return;
   }
   const player = players[playerIndex];
   if (player.position === newPosition) {
-    log(`${player.name} is already at ${newPosition}!`);
+    log(`${player.name} уже ${formatPosition(newPosition)}!`);
     render(players, currentPlayer, gameLog);
     return;
   }
@@ -155,7 +157,7 @@ function discardForPosition(playerIndex, cardIndex, newPosition) {
   const { v2 } = getFatigueIncrements();
   if (v2 > 0) player.fatigue += v2;
 
-  log(`${player.name} discards ${card.name} to move to ${formatPosition(newPosition)}`);
+  log(`${player.name} сбрасывает ${card.name} и перебегает: ${formatPosition(newPosition)}${v2 > 0 ? ' (+1 усталости)' : ''}`);
   canDiscardForPosition = -1;
   render(players, currentPlayer, gameLog);
 }
@@ -212,10 +214,10 @@ function startNewPoint() {
   currentPlayer = servingPlayer;
   pointCount++;
 
-  log(`--- New Point | Score: ${formatTennisScore()} | Games: ${gamesWon[0]}-${gamesWon[1]} | Server: ${server.name} | Start: ${startPos} ---`);
+  log(`— Новый розыгрыш | Счёт: ${formatTennisScore()} | Геймы: ${gamesWon[0]}-${gamesWon[1]} | Подаёт: ${server.name} | Старт: ${formatPosition(startPos)} —`);
 
   if (isTrulyStuck(players[currentPlayer])) {
-    log(`${players[currentPlayer].name} has no playable cards at serve — point forfeited.`);
+    log(`У ${players[currentPlayer].name} нет карт для подачи — очко отдано.`);
     endPoint(1 - currentPlayer);
   }
 }
@@ -228,7 +230,7 @@ function endPoint(winnerIndex) {
   if ((p1 >= 4 && p1 - p2 >= 2) || (p2 >= 4 && p2 - p1 >= 2)) {
     const winner = p1 > p2 ? 0 : 1;
     gamesWon[winner]++;
-    log(`<strong>🎾 ${players[winner].name} WINS THE GAME! Games: ${gamesWon[0]}-${gamesWon[1]}</strong>`);
+    log(`<strong>🎾 ${players[winner].name} выигрывает гейм! Геймы: ${gamesWon[0]}-${gamesWon[1]}</strong>`);
     tennisP1Points = 0;
     tennisP2Points = 0;
     pointCount = 0;
@@ -242,7 +244,7 @@ function endPoint(winnerIndex) {
       p.discard = [];
     });
   } else {
-    log(`<strong>Point → ${players[winnerIndex].name}! Score: ${formatTennisScore()}</strong>`);
+    log(`<strong>Очко → ${players[winnerIndex].name}! Счёт: ${formatTennisScore()}</strong>`);
   }
 
   startNewPoint();
@@ -264,7 +266,7 @@ function startGame() {
     p.hand    = [];
     p.temporaryRemovedServes = [];
   });
-  log('=== 🎾 Tennis Card Game Start ===');
+  log('=== 🎾 Начало матча ===');
   startNewPoint();
   render(players, currentPlayer, gameLog);
 }
@@ -273,7 +275,7 @@ function startGame() {
 
 function applyDropshotPositioning(player, card) {
   player.position = 'Net';
-  if (card.approach) log(`${player.name} approaches to net`);
+  if (card.approach) log(`${player.name} выходит к сетке`);
   player.positionBeforeDropshot = null;
 }
 
@@ -285,19 +287,19 @@ function applyNormalPositioning(player, card) {
 
   if (card.approach) {
     player.position = 'Net';
-    log(`${player.name} moves to the net`);
+    log(`${player.name} выходит к сетке`);
     return;
   }
   if (!player.inPosition && card.type === 'return') {
     if (wasLobbed) {
-      log(`${player.name} stays at ${formatPosition(player.position)}`);
+      log(`${player.name} остаётся: ${formatPosition(player.position)}`);
     } else {
       const positionBefore = player.position;
       updatePositionAfterOutOfPositionReturn(player);
       if (player.position !== positionBefore) {
-        log(`${player.name} moves to ${formatPosition(player.position)}`);
+        log(`${player.name} смещается: ${formatPosition(player.position)}`);
       } else {
-        log(`${player.name} stays at ${formatPosition(player.position)}`);
+        log(`${player.name} остаётся: ${formatPosition(player.position)}`);
       }
     }
   }
@@ -315,7 +317,7 @@ function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
   if (card.volley && opponent.position === 'Net')    oop = false;
   if (card.antiNet && opponent.position === 'Net') {
     oop = true;
-    log(`${card.name} forces net player out of position!`);
+    log(`${card.name} выбивает игрока у сетки из позиции!`);
   }
   if (card.dropshot && opponent.position !== 'Net')  oop = true;
   return oop;
@@ -330,7 +332,7 @@ function playCard(playerIndex, cardIndex) {
 
   // A card marked for active discard cannot be played itself — uncheck it first
   if (markedCardIndices[playerIndex] === cardIndex) {
-    log(`${player.name} cannot play ${card.name} — it is marked for discard! Uncheck it first.`);
+    log(`${player.name}: карта ${card.name} помечена на сброс — сначала снимите отметку.`);
     render(players, currentPlayer, gameLog);
     return;
   }
@@ -342,15 +344,15 @@ function playCard(playerIndex, cardIndex) {
   // Validate
   if (!isCardPlayable(card, player, incomingPower, incomingCard)) {
     if (card.type === 'serve' && incomingPower > 0) {
-      log(`${player.name} cannot serve mid-rally!`);
+      log(`${player.name}: нельзя подавать посреди розыгрыша!`);
     } else if (incomingPower === 0 && card.type !== 'serve') {
-      log(`${player.name} must serve first!`);
+      log(`${player.name}: сначала нужно подать!`);
     } else if (player.position === 'Net' && !card.volley && !card.overhead && !respondingToDropshot) {
-      log(`${player.name} cannot play ${card.name} at the net!`);
+      log(`${player.name}: ${card.name} нельзя играть у сетки!`);
     } else if (card.volley && player.position !== 'Net') {
-      log(`${player.name} cannot play ${card.name} — volleys only at net!`);
+      log(`${player.name}: ${card.name} — удары слёта только у сетки!`);
     } else if (card.overhead && (!incomingCard || !incomingCard.smashable)) {
-      log(`${player.name} cannot smash — only moonballs and lobs!`);
+      log(`${player.name}: смэш можно только по свече!`);
     }
     render(players, currentPlayer, gameLog);
     return;
@@ -379,9 +381,9 @@ function playCard(playerIndex, cardIndex) {
     player.discard.push(activeCard);
     markedCardIndices[playerIndex] = -1;
 
-    const effectDesc = color === 'red'  ? '+2 Power to shot' :
-                       color === 'blue' ? '+1 Spin to shot'  : 'Free draw after shot';
-    log(`${player.name} discards <strong>${activeCard.name}</strong> for effect: ${effectDesc}`);
+    const effectDesc = color === 'red'  ? '+2 к силе удара' :
+                       color === 'blue' ? '+1 к вращению'   : 'бесплатный добор';
+    log(`${player.name} сбрасывает <strong>${activeCard.name}</strong> ради эффекта: ${effectDesc}`);
   } else {
     // Playing the marked card itself, or playing a serve — clear mark, no bonus
     markedCardIndices[playerIndex] = -1;
@@ -397,12 +399,12 @@ function playCard(playerIndex, cardIndex) {
   const { v1, v2 } = getFatigueIncrements();
 
   // Build log strings shared between success/miss
-  const posStr   = `${player.inPosition ? 'IN' : 'OUT'} pos (${info.numDice}d6)`;
+  const posStr   = `${info.inPosition ? 'в позиции' : 'вне позиции'} (${info.numDice}к6)`;
   const cardStat = `(${info.shotPower}/${info.shotSpin})`;
   const breakdown = formatComplexityBreakdown(info);
   const vsStr    = breakdown ? `${info.totalComplexity} (${breakdown})` : `${info.totalComplexity}`;
-  const rollStr  = `Roll ${info.diceRoll} - Fat ${info.fatigue}${info.d3Value > 0 ? ` - d3 ${info.d3Value}` : ''} = <strong>${info.skillCheck}</strong>`;
-  const extras   = `${info.d3Value > 0 ? ` | Complex: -${info.d3Value}` : ''}${info.guidedPenalty > 0 ? ` | Guided: +${info.guidedPenalty}` : ''}`;
+  const rollStr  = `Бросок ${info.diceRoll} − усталость ${info.fatigue}${info.d3Value > 0 ? ` − d3 ${info.d3Value}` : ''} = <strong>${info.skillCheck}</strong>`;
+  const extras   = `${info.d3Value > 0 ? ` | Сложный: −${info.d3Value}` : ''}${info.guidedPenalty > 0 ? ` | Прицельный: +${info.guidedPenalty}` : ''}`;
 
   if (success) {
     // Pre-roll powershot bonus BEFORE display so the red die shows immediately
@@ -410,9 +412,9 @@ function playCard(playerIndex, cardIndex) {
       pendingPowershotBonus = Math.floor(Math.random() * 6) + 1;
     }
 
-    displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, pendingPowershotBonus);
+    displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, pendingPowershotBonus, true);
 
-    log(`${player.name} plays <strong>${card.name}</strong> ${cardStat} | ${posStr}${extras}<br>${rollStr} vs ${vsStr} ✓${pendingPowershotBonus > 0 ? ` | ⚡ Opponent +${pendingPowershotBonus}` : ''}`);
+    log(`${player.name} играет <strong>${card.name}</strong> ${cardStat} | ${posStr}${extras}<br>${rollStr} против ${vsStr} ✓${pendingPowershotBonus > 0 ? ` | ⚡ сопернику +${pendingPowershotBonus}` : ''}`);
 
     player.fatigue += v1;
     if (!player.inPosition) player.fatigue += v2;
@@ -438,7 +440,7 @@ function playCard(playerIndex, cardIndex) {
       opponent.position = player.position;
       opponent.inPosition = false;
       opponent.wasLobbed = true;
-      log(`${opponent.name} is lobbed back to ${formatPosition(player.position)} (out of position)`);
+      log(`${opponent.name} отброшен свечкой на ${formatPosition(player.position)} (вне позиции)`);
     }
 
     // Update current-turn info for the panel
@@ -472,11 +474,11 @@ function playCard(playerIndex, cardIndex) {
     // so the draw lands in the current hand, not after startNewPoint resets it to 5
     if (pendingGreenDraw) {
       drawCard(player, log, true); // skipFatigue = true
-      log(`${player.name} draws a free card (green discard effect)`);
+      log(`${player.name} берёт карту бесплатно (эффект зелёного сброса)`);
     }
 
     if (isTrulyStuck(players[currentPlayer])) {
-      log(`${players[currentPlayer].name} has a full hand with no playable cards — point lost!`);
+      log(`У ${players[currentPlayer].name} полная рука без ходов — очко проиграно!`);
       endPoint(1 - currentPlayer);
     }
 
@@ -486,17 +488,17 @@ function playCard(playerIndex, cardIndex) {
     // Serve fault
     if (card.type === 'serve') {
       if (serveAttempt === 1) {
-        log(`${player.name} — FAULT with <strong>${card.name}</strong> ${cardStat}! Second serve.<br>${rollStr} vs ${vsStr} ✗`);
-        displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0);
+        log(`${player.name} — ОШИБКА подачи <strong>${card.name}</strong> ${cardStat}! Вторая подача.<br>${rollStr} против ${vsStr} ✗`);
+        displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
         serveAttempt = 2;
         if (pendingGreenDraw) {
           drawCard(player, log, true);
-          log(`${player.name} draws a free card (green discard effect)`);
+          log(`${player.name} берёт карту бесплатно (эффект зелёного сброса)`);
         }
         render(players, currentPlayer, gameLog);
       } else {
-        log(`${player.name} — DOUBLE FAULT with <strong>${card.name}</strong> ${cardStat}! Point to ${players[1 - playerIndex].name}.<br>${rollStr} vs ${vsStr} ✗`);
-        displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0);
+        log(`${player.name} — ДВОЙНАЯ ОШИБКА <strong>${card.name}</strong> ${cardStat}! Очко ${players[1 - playerIndex].name}.<br>${rollStr} против ${vsStr} ✗`);
+        displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
         endPoint(1 - playerIndex);
         render(players, currentPlayer, gameLog);
       }
@@ -504,8 +506,8 @@ function playCard(playerIndex, cardIndex) {
     }
 
     // Normal miss
-    log(`${player.name} MISSES <strong>${card.name}</strong> ${cardStat}! | ${posStr}${extras}<br>${rollStr} vs ${vsStr} ✗`);
-    displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0);
+    log(`${player.name} ПРОМАХ <strong>${card.name}</strong> ${cardStat}! | ${posStr}${extras}<br>${rollStr} против ${vsStr} ✗`);
+    displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
 
     player.fatigue += v1;
     if (!player.inPosition) player.fatigue += v2;

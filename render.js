@@ -32,9 +32,9 @@ function render(players, currentPlayer, gameLog) {
     const player = players[playerIndex];
     const opts = ['BR', 'BL', 'Net']
       .filter(pos => pos !== player.position)
-      .map(pos => `<button class="position-btn" onclick="discardForPosition(${playerIndex},${cardIdx},'${pos}')">→ ${pos}</button>`)
+      .map(pos => `<button class="position-btn" onclick="discardForPosition(${playerIndex},${cardIdx},'${pos}')">→ ${formatPosition(pos)}</button>`)
       .join('');
-    return opts ? `<div class="discard-move"><em>Move:</em> ${opts}</div>` : '';
+    return opts ? `<div class="discard-move"><em>Перебежать:</em> ${opts}</div>` : '';
   }
 
   function renderAiControls(playerIndex) {
@@ -46,7 +46,7 @@ function render(players, currentPlayer, gameLog) {
 
     const passTurnBtn = canPassTurn
       ? `<button class="ai-btn ai-btn-pass" onclick="aiPassTurn(${playerIndex})"
-           title="Finish repositioning and let AI proceed">✓ Пропустить</button>`
+           title="Finish repositioning and let AI proceed">✓ Передать ход</button>`
       : '';
 
     return `
@@ -142,15 +142,15 @@ function render(players, currentPlayer, gameLog) {
       : '';
 
     const posLabel = player.inPosition
-      ? '<span class="in-pos">✓ IN</span>'
-      : '<span class="out-pos">✗ OUT</span>';
+      ? '<span class="in-pos">✓ В позиции</span>'
+      : '<span class="out-pos">✗ Вне позиции</span>';
 
     return `
-      <h2 class="player-title">${player.name}${isActive ? ' <span class="turn-badge">Ход</span>' : ''}${isAuto ? ' <span class="ai-badge">🤖 AI v' + aiVersion[playerIndex] + '</span>' : ''}</h2>
+      <h2 class="player-title">${player.name}${isActive ? ' <span class="turn-badge">Ход</span>' : ''}${isAuto ? ' <span class="ai-badge">🤖 ИИ v' + aiVersion[playerIndex] + '</span>' : ''}</h2>
       <div class="player-stats">
-        <span class="st-fat"><strong>Fatigue:</strong> ${player.fatigue} <em>[${fatigueLabel}]</em></span>
-        <span class="st-pos"><strong>Pos:</strong> ${player.position} ${posLabel}</span>
-        <span class="st-deck"><strong>Deck:</strong> ${player.deck.length} | <strong>Disc:</strong> ${player.discard.length}</span>
+        <span class="st-fat"><strong>Усталость:</strong> ${player.fatigue} <em>[${fatigueLabel}]</em></span>
+        <span class="st-pos">${formatPosition(player.position)} ${posLabel}</span>
+        <span class="st-deck"><strong>Колода:</strong> ${player.deck.length} | <strong>Сброс:</strong> ${player.discard.length}</span>
         <span class="st-hand"><strong>Рука:</strong> ${player.hand.length}</span>
       </div>
       ${renderAiControls(playerIndex)}
@@ -168,6 +168,9 @@ function render(players, currentPlayer, gameLog) {
     incomingCard.type !== 'serve' &&
     !incomingCard.dropshot;
   renderCourtPositions(players, currentPlayer, shiftToCenter);
+
+  // Hook: refresh the mobile event log (index.html only)
+  if (typeof renderMobileLog === 'function') renderMobileLog();
 
   // Hook: schedule AI move if auto mode is on for current player
   if (typeof aiCheckAutoTrigger === 'function') aiCheckAutoTrigger();
@@ -211,10 +214,14 @@ function renderCurrentTurnPanel() {
     </div>`;
 
   el.innerHTML = `
-    <div class="ct-title">Текущий ход</div>
-    <div class="ct-arrow-row">${arrow}</div>
-    <div class="ct-card-name">${cardName}</div>
-    <div class="ct-card-stats"><span>⚡${power}</span><span>🌀${spin}</span></div>
+    <div class="ct-head">
+      <div class="ct-title">Текущий ход</div>
+      <div class="ct-arrow-row">${arrow}</div>
+    </div>
+    <div class="ct-name-row">
+      <span class="ct-card-name">${cardName}</span>
+      <span class="ct-card-stats"><span>⚡${power}</span><span>🌀${spin}</span></span>
+    </div>
     ${badges ? `<div class="card-badges">${badges}</div>` : ''}
     ${diffHtml}
   `;

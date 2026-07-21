@@ -34,19 +34,19 @@
       <div class="net-post net-post-top"></div>
       <div class="net-post net-post-bottom"></div>
 
-      <!-- P1 zones (left half) -->
-      <div class="zone" data-id="p1-BL">BL</div>
-      <div class="zone" data-id="p1-BR">BR</div>
-      <div class="zone" data-id="p1-Net">NET</div>
+      <!-- P1 zones (left half). Labels are display-only; data-id keys stay ASCII. -->
+      <div class="zone" data-id="p1-BL">Слева</div>
+      <div class="zone" data-id="p1-BR">Справа</div>
+      <div class="zone" data-id="p1-Net">Сетка</div>
 
       <!-- P2 zones (right half) — BR top, BL bottom -->
-      <div class="zone" data-id="p2-Net">NET</div>
-      <div class="zone" data-id="p2-BR">BR</div>
-      <div class="zone" data-id="p2-BL">BL</div>
+      <div class="zone" data-id="p2-Net">Сетка</div>
+      <div class="zone" data-id="p2-BR">Справа</div>
+      <div class="zone" data-id="p2-BL">Слева</div>
 
       <!-- corner labels -->
       <div class="court-label label-p1">P1 (вы)</div>
-      <div class="court-label label-p2">P2 (AI)</div>
+      <div class="court-label label-p2">P2 (ИИ)</div>
     </div>
   </div>
 
@@ -71,6 +71,26 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 3.5 — LOG TICKER (tap to expand)
+  ════════════════════════════════════════════ -->
+  <div id="app-log" onclick="toggleLogOverlay(true)" title="Открыть журнал">
+    <span class="app-log-icon">📋</span>
+    <span class="app-log-line">— начните розыгрыш —</span>
+    <span class="app-log-more">▲</span>
+  </div>
+
+  <!-- Full-history overlay -->
+  <div id="log-overlay" onclick="if(event.target===this)toggleLogOverlay(false)">
+    <div class="log-sheet">
+      <div class="log-sheet-head">
+        <strong>Журнал</strong>
+        <button class="log-close" onclick="toggleLogOverlay(false)">✕</button>
+      </div>
+      <div class="log-sheet-body" id="log-full"></div>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -115,6 +135,34 @@
   <script src="game.js"></script>
 
   <script>
+    // Route every dice roll — player's or AI's — into the one visible block.
+    window.DICE_SINGLE_TARGET = 'player1-dice';
+
+    // ── Event log (mobile) ──────────────────────────────────
+    // The ticker shows the most recent line; tapping opens the full history.
+    function renderMobileLog() {
+      if (typeof gameLog === 'undefined') return;
+      const line = document.querySelector('#app-log .app-log-line');
+      // Collapse the <br> inside shot lines so the ticker stays a single row.
+      if (line && gameLog.length)
+        line.innerHTML = gameLog[gameLog.length - 1].replace(/<br\s*\/?>/gi, ' · ');
+      const overlay = document.getElementById('log-overlay');
+      if (overlay && overlay.classList.contains('open')) {
+        document.getElementById('log-full').innerHTML =
+          [...gameLog].reverse().join('<div class="log-sep"></div>');
+      }
+    }
+
+    function toggleLogOverlay(open) {
+      const overlay = document.getElementById('log-overlay');
+      if (!overlay) return;
+      overlay.classList.toggle('open', open);
+      if (open) {
+        document.getElementById('log-full').innerHTML =
+          (typeof gameLog !== 'undefined' ? [...gameLog].reverse() : []).join('<div class="log-sep"></div>');
+      }
+    }
+
     // ── Telegram Mini App init ──────────────────────────────
     const tg = window.Telegram?.WebApp;
     if (tg) {

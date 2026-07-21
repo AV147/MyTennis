@@ -23,12 +23,12 @@ function shuffle(array) {
 function drawCard(player, logFunction, skipFatigue = false) {
   if (player.deck.length === 0) {
     if (player.discard.length === 0) {
-      logFunction(`${player.name} has no cards left!`);
+      logFunction(`У ${player.name} закончились карты!`);
       return;
     }
     player.deck = shuffle([...player.discard]);
     player.discard = [];
-    logFunction(`${player.name} reshuffles their discard pile.`);
+    logFunction(`${player.name} перетасовывает сброс в колоду.`);
   }
 
   player.hand.push(player.deck.pop());
