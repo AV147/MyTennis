@@ -407,6 +407,23 @@ function playCard(playerIndex, cardIndex) {
   const extras   = `${info.d3Value > 0 ? ` | Сложный: −${info.d3Value}` : ''}${info.guidedPenalty > 0 ? ` | Прицельный: +${info.guidedPenalty}` : ''}`;
 
   if (success) {
+    // A sideways out-of-position return means the player runs to the opposite
+    // corner and makes contact THERE. The run happens BEFORE the hit, so log it
+    // first — the journal then reads in physical order (run, then the shot from
+    // the new corner) and the trajectory / opponent-OOP check below use that new
+    // corner. Approach and dropshot responses are different: they hit from where
+    // they stand and only then advance to the net, handled after the shot.
+    const oopSidewaysReturn =
+      player.positionBeforeDropshot === null && !card.approach &&
+      !player.inPosition && card.type === 'return' && !player.wasLobbed;
+    if (oopSidewaysReturn) {
+      const before = player.position;
+      updatePositionAfterOutOfPositionReturn(player);        // run to the ball
+      log(player.position !== before
+        ? `${player.name} смещается: ${formatPosition(player.position)}`
+        : `${player.name} остаётся: ${formatPosition(player.position)}`);
+    }
+
     // Pre-roll powershot bonus BEFORE display so the red die shows immediately
     if (card.powershot) {
       pendingPowershotBonus = Math.floor(Math.random() * 6) + 1;
@@ -420,26 +437,9 @@ function playCard(playerIndex, cardIndex) {
     if (!player.inPosition) player.fatigue += v2;
     if (card.type === 'serve') serveAttempt = 1;
 
-    const playerSide = playerIndex === 0 ? 'p1' : 'p2';
-
-    // A sideways out-of-position return means the player runs to the opposite
-    // corner and makes contact THERE, so the shot originates from the new
-    // corner and the opponent's out-of-position check must use it. Approach and
-    // dropshot responses are different: they hit from where they stand and only
-    // then advance to the net, so they keep their pre-move origin (below).
-    const oopSidewaysReturn =
-      player.positionBeforeDropshot === null && !card.approach &&
-      !player.inPosition && card.type === 'return' && !player.wasLobbed;
-    if (oopSidewaysReturn) {
-      const before = player.position;
-      updatePositionAfterOutOfPositionReturn(player);        // run to the ball
-      log(player.position !== before
-        ? `${player.name} смещается: ${formatPosition(player.position)}`
-        : `${player.name} остаётся: ${formatPosition(player.position)}`);
-    }
-
     // Trajectory + opponent positioning, from the actual point of contact.
     const shotOriginPosition = player.position;
+    const playerSide = playerIndex === 0 ? 'p1' : 'p2';
     drawShotLine(shotOriginPosition, getTargetPosition(shotOriginPosition, card.type, card, opponent.position), playerSide);
     opponent.inPosition = !calcOpponentOutOfPosition(card, shotOriginPosition, opponent);
 
