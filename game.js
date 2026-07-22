@@ -453,12 +453,15 @@ function playCard(playerIndex, cardIndex) {
       player.wasLobbed = false; // consumed; applyNormalPositioning skipped
     }
 
-    // Lob: immediately push net opponent to back position so they can answer correctly
+    // Lob: push a net opponent back to a BACK corner. Use the shooter's contact
+    // position, not player.position — when the lob answers a dropshot the player
+    // has just advanced to the net, so player.position is 'Net' and the opponent
+    // would (wrongly) be pushed to the net instead of driven off it.
     if (card.antiNet && card.smashable && opponent.position === 'Net') {
-      opponent.position = player.position;
+      opponent.position = shotOriginPosition;
       opponent.inPosition = false;
       opponent.wasLobbed = true;
-      log(`${opponent.name} отброшен свечкой на ${formatPosition(player.position)} (вне позиции)`);
+      log(`${opponent.name} отброшен свечкой на ${formatPosition(shotOriginPosition)} (вне позиции)`);
     }
 
     // Update current-turn info for the panel
