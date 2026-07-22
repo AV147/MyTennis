@@ -420,19 +420,37 @@ function playCard(playerIndex, cardIndex) {
     if (!player.inPosition) player.fatigue += v2;
     if (card.type === 'serve') serveAttempt = 1;
 
-    // Shot trajectory and opponent positioning are computed from where the
-    // player actually made contact — capture it before any post-shot
-    // repositioning (e.g. dropshot response always ending at Net) overwrites it.
-    const shotOriginPosition = player.position;
     const playerSide = playerIndex === 0 ? 'p1' : 'p2';
+
+    // A sideways out-of-position return means the player runs to the opposite
+    // corner and makes contact THERE, so the shot originates from the new
+    // corner and the opponent's out-of-position check must use it. Approach and
+    // dropshot responses are different: they hit from where they stand and only
+    // then advance to the net, so they keep their pre-move origin (below).
+    const oopSidewaysReturn =
+      player.positionBeforeDropshot === null && !card.approach &&
+      !player.inPosition && card.type === 'return' && !player.wasLobbed;
+    if (oopSidewaysReturn) {
+      const before = player.position;
+      updatePositionAfterOutOfPositionReturn(player);        // run to the ball
+      log(player.position !== before
+        ? `${player.name} смещается: ${formatPosition(player.position)}`
+        : `${player.name} остаётся: ${formatPosition(player.position)}`);
+    }
+
+    // Trajectory + opponent positioning, from the actual point of contact.
+    const shotOriginPosition = player.position;
     drawShotLine(shotOriginPosition, getTargetPosition(shotOriginPosition, card.type, card, opponent.position), playerSide);
     opponent.inPosition = !calcOpponentOutOfPosition(card, shotOriginPosition, opponent);
 
-    // Positioning
+    // Post-hit movement: approach / dropshot advance to the net. The sideways
+    // run, if any, already happened above — don't repeat it.
     if (player.positionBeforeDropshot !== null) {
       applyDropshotPositioning(player, card);
-    } else {
+    } else if (!oopSidewaysReturn) {
       applyNormalPositioning(player, card);
+    } else {
+      player.wasLobbed = false; // consumed; applyNormalPositioning skipped
     }
 
     // Lob: immediately push net opponent to back position so they can answer correctly
