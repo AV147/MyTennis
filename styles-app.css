@@ -304,6 +304,15 @@ button { font-family: inherit; }
   color: #a8c0d8;
   font-weight: 600;
 }
+.ct-miss {
+  color: #ff8070;
+  font-weight: 800;
+  font-size: 10px;
+  background: rgba(192,57,43,.18);
+  border: 1px solid #c0392b;
+  border-radius: 4px;
+  padding: 0 5px;
+}
 .ct-difficulty {
   font-size: 10px;
   color: #8ab0cc;
@@ -1019,13 +1028,11 @@ button { font-family: inherit; }
   box-shadow: 0 0 10px rgba(46,134,193,.45);
 }
 
-/* reopen-menu button over the score bar */
-#menu-btn {
+/* floating buttons over the score bar (left: menu, right: new match) */
+#menu-btn, #new-match-btn {
   position: absolute;
-  left: 6px;
   top: max(6px, env(safe-area-inset-top));
   z-index: 60;
-  width: 32px;
   height: 32px;
   border-radius: 8px;
   background: rgba(0,0,0,.28);
@@ -1035,6 +1042,18 @@ button { font-family: inherit; }
   line-height: 1;
   cursor: pointer;
 }
+#menu-btn  { left: 6px; width: 32px; }
+#new-match-btn {
+  right: 6px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#menu-btn:active, #new-match-btn:active { background: rgba(0,0,0,.5); }
+
+/* reserve room on both ends so the centered score text clears the buttons */
+#tennis-score { padding-left: 44px; padding-right: 84px; }
 
 /* ═══════════════════════════════════════════════════
    8. RULES OVERLAY (rendered RULES.md)

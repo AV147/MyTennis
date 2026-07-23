@@ -282,7 +282,7 @@ function renderCurrentTurnPanel() {
     return;
   }
 
-  const { playerIndex, cardName, power, spin, baseDifficulty, powershotBonus,
+  const { playerIndex, cardName, power, spin, baseDifficulty, powershotBonus, missed,
           guided, powershot, complex, dropshot, approach, smashable, antiNet, volley, overhead } = lastTurnInfo;
 
   const arrow = playerIndex === 0
@@ -308,6 +308,8 @@ function renderCurrentTurnPanel() {
       <span class="ct-diff-value">${baseDifficulty}${powershotBonus > 0 ? ` + <span class="ct-power-bonus">⚡${powershotBonus}</span> = ${total}` : ''}</span>
     </div>`;
 
+  const missBadge = missed ? '<span class="ct-miss">✗ Промах</span>' : '';
+
   el.innerHTML = `
     <div class="ct-head">
       <div class="ct-title">Текущий ход</div>
@@ -315,7 +317,7 @@ function renderCurrentTurnPanel() {
     </div>
     <div class="ct-name-row">
       <span class="ct-card-name">${cardName}</span>
-      <span class="ct-card-stats"><span>⚡${power}</span><span>🌀${spin}</span></span>
+      <span class="ct-card-stats">${missBadge}<span>⚡${power}</span><span>🌀${spin}</span></span>
     </div>
     ${badges ? `<div class="card-badges">${badges}</div>` : ''}
     ${diffHtml}

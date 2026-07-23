@@ -160,8 +160,11 @@
     </div>
   </div>
 
-  <!-- reopen-menu button, floats over the score bar -->
+  <!-- reopen-menu button, floats over the score bar (left) -->
   <button id="menu-btn" onclick="openMenu()" title="Меню">☰</button>
+
+  <!-- new-match button, floats over the score bar (right) -->
+  <button id="new-match-btn" onclick="newMatch()" title="Новая партия">⟳&nbsp;Партия</button>
 
   <!-- ═══════════════════════════════════════════
        SCRIPTS
@@ -218,6 +221,24 @@
         document.getElementById('log-full').innerHTML =
           (typeof gameLog !== 'undefined' ? [...gameLog].reverse() : []).join('<div class="log-sep"></div>');
       }
+    }
+
+    // ── New match (top ribbon) ──────────────────────────────
+    // Restarts the whole match (score, games, decks) without opening the menu.
+    // Confirms first so a stray tap doesn't wipe a match in progress.
+    function newMatch() {
+      const go = () => { if (typeof startGame === 'function') startGame(); };
+      const q = 'Начать новую партию? Текущий счёт будет сброшен.';
+      // tg.showConfirm exists but throws WebAppMethodUnsupported on older
+      // Telegram WebViews (Bot API < 6.2) — version-gate it, then fall back to
+      // a native confirm (the try/catch is a belt-and-suspenders guard).
+      const canShowConfirm = tg && typeof tg.showConfirm === 'function' &&
+        (typeof tg.isVersionAtLeast !== 'function' || tg.isVersionAtLeast('6.2'));
+      if (canShowConfirm) {
+        try { tg.showConfirm(q, ok => { if (ok) go(); }); return; }
+        catch (e) { /* unsupported — fall through */ }
+      }
+      if (window.confirm(q)) go();
     }
 
     // ── Main menu ───────────────────────────────────────────
