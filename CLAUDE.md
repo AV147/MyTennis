@@ -18,7 +18,15 @@ messages are English. Internal keys stay ASCII: `player.position` and court
 | `old_index.html` | Debug build (`styles.css`). Full controls: AI version toggles, 10k-point simulation, v3 training panel, per-player dice. `AI_HAND_HIDDEN` (config.js) is overridden to false here so AI hands stay visible. |
 
 `render.js`, `game.js`, `dice-visuals.js`, `deck-utils.js`, `ai-*.js` are
-**shared by both pages** — check both after editing them.
+**shared by both pages** — check both after editing them. `tutorial.js`
+(spotlight walkthrough) is loaded by `index.html` only; the main menu
+(Играть / сложность Легко=v2 Сложно=v3 / Обучение / Правила-из-RULES.md),
+card-detail sheet and rules overlay live in `index.html` + `styles-app.css`.
+
+After every point the game freezes (positions, shot line, dice stay visible)
+until «Новый розыгрыш» (`confirmNewPoint()` in game.js) — `pendingPointEnd`
+gates player actions and the AI scheduler; the game-win deck reshuffle is
+deferred behind it too (`pendingGameReshuffle`).
 
 ## Core game files
 

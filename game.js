@@ -29,12 +29,18 @@ let markedCardIndices = [-1, -1];
 // Info about the last successfully played shot — drives the Текущий ход panel
 let lastTurnInfo = null;
 
+// Point-end pause: after a point ends the board keeps the final positions,
+// shot line and dice roll on screen until "Новый розыгрыш" is pressed.
+let pendingPointEnd = false;
+let pendingGameReshuffle = false;
+
 const gameLog = [];
 function log(msg) { gameLog.push(msg); }
 
 // ===== ACTIVE DISCARD MECHANIC =====
 
 function markCardForDiscard(playerIndex, cardIndex, checked) {
+  if (pendingPointEnd) return;
   if (checked) {
     markedCardIndices[playerIndex] = cardIndex;
   } else {
@@ -109,6 +115,7 @@ function getCardCategory(card) {
 // ===== DRAW / DISCARD ACTIONS =====
 
 function manualDrawCard(playerIndex) {
+  if (pendingPointEnd) return;
   if (playerIndex !== currentPlayer) {
     log(`Сейчас не ход ${players[playerIndex].name}!`);
     render(players, currentPlayer, gameLog);
@@ -137,6 +144,7 @@ function manualDrawCard(playerIndex) {
 }
 
 function discardForPosition(playerIndex, cardIndex, newPosition) {
+  if (pendingPointEnd) return;
   if (canDiscardForPosition !== playerIndex) {
     log(`${players[playerIndex].name} сейчас не может сбрасывать для перебежки!`);
     render(players, currentPlayer, gameLog);
@@ -235,6 +243,26 @@ function endPoint(winnerIndex) {
     tennisP2Points = 0;
     pointCount = 0;
     servingPlayer = 1 - servingPlayer;
+    // Deck reshuffle waits for confirmNewPoint so the final board state
+    // (hands, positions, shot line, dice) stays on screen during the pause.
+    pendingGameReshuffle = true;
+  } else {
+    log(`<strong>Очко → ${players[winnerIndex].name}! Счёт: ${formatTennisScore()}</strong>`);
+  }
+
+  // Freeze the board: the next point starts only when the player presses
+  // "Новый розыгрыш" (confirmNewPoint). No repositioning during the pause.
+  pendingPointEnd = true;
+  canDiscardForPosition = -1;
+}
+
+// "Новый розыгрыш" button — actually starts the next point.
+function confirmNewPoint() {
+  if (!pendingPointEnd) return;
+  pendingPointEnd = false;
+
+  if (pendingGameReshuffle) {
+    pendingGameReshuffle = false;
     // Reshuffle both decks at the start of each new game (serve switch)
     players.forEach(p => {
       p.discard.push(...p.hand, ...p.temporaryRemovedServes);
@@ -243,11 +271,17 @@ function endPoint(winnerIndex) {
       p.deck = shuffle([...p.deck, ...p.discard]);
       p.discard = [];
     });
-  } else {
-    log(`<strong>Очко → ${players[winnerIndex].name}! Счёт: ${formatTennisScore()}</strong>`);
   }
 
+  // Clear the previous point's visuals
+  if (typeof currentShotLine !== 'undefined' && currentShotLine) {
+    currentShotLine.remove();
+    currentShotLine = null;
+  }
+  if (typeof clearDiceDisplays === 'function') clearDiceDisplays();
+
   startNewPoint();
+  render(players, currentPlayer, gameLog);
 }
 
 function startGame() {
@@ -259,6 +293,8 @@ function startGame() {
   pointCount    = 0;
   pendingPowershotBonus = 0;
   lastTurnInfo  = null;
+  pendingPointEnd = false;
+  pendingGameReshuffle = false;
   // Shuffle once at game start — decks persist across points from here
   players.forEach((p, idx) => {
     p.deck    = shuffle([...PLAYER_DECKS[idx]]);
@@ -267,6 +303,11 @@ function startGame() {
     p.temporaryRemovedServes = [];
   });
   log('=== 🎾 Начало матча ===');
+  if (typeof currentShotLine !== 'undefined' && currentShotLine) {
+    currentShotLine.remove();
+    currentShotLine = null;
+  }
+  if (typeof clearDiceDisplays === 'function') clearDiceDisplays();
   startNewPoint();
   render(players, currentPlayer, gameLog);
 }
@@ -326,6 +367,7 @@ function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
 // ===== MAIN PLAY ACTION =====
 
 function playCard(playerIndex, cardIndex) {
+  if (pendingPointEnd) return;
   const player   = players[playerIndex];
   const opponent = players[1 - playerIndex];
   const card     = player.hand[cardIndex];
@@ -406,6 +448,31 @@ function playCard(playerIndex, cardIndex) {
   const rollStr  = `Бросок ${info.diceRoll} − усталость ${info.fatigue}${info.d3Value > 0 ? ` − d3 ${info.d3Value}` : ''} = <strong>${info.skillCheck}</strong>`;
   const extras   = `${info.d3Value > 0 ? ` | Сложный: −${info.d3Value}` : ''}${info.guidedPenalty > 0 ? ` | Прицельный: +${info.guidedPenalty}` : ''}`;
 
+  // Snapshot for the "Текущий ход" panel — set for both hits and misses so the
+  // panel always matches the dice roll on screen.
+  function recordTurn(missed, psBonus) {
+    lastTurnInfo = {
+      playerIndex,
+      cardName:       card.name,
+      power:          shotPower,
+      spin:           shotSpin,
+      direction:      card.direction || 'neutral',
+      baseDifficulty: shotPower + shotSpin,
+      powershotBonus: psBonus || 0,
+      isServe:        card.type === 'serve',
+      guided:    card.guided,
+      powershot: card.powershot,
+      complex:   card.complex,
+      dropshot:  card.dropshot,
+      approach:  card.approach,
+      smashable: card.smashable,
+      antiNet:   card.antiNet,
+      volley:    card.volley,
+      overhead:  card.overhead,
+      missed:    !!missed,
+    };
+  }
+
   if (success) {
     // A sideways out-of-position return means the player runs to the opposite
     // corner and makes contact THERE. The run happens BEFORE the hit, so log it
@@ -465,25 +532,7 @@ function playCard(playerIndex, cardIndex) {
     }
 
     // Update current-turn info for the panel
-    lastTurnInfo = {
-      playerIndex,
-      cardName:       card.name,
-      power:          shotPower,
-      spin:           shotSpin,
-      direction:      card.direction || 'neutral',
-      baseDifficulty: shotPower + shotSpin,
-      powershotBonus: pendingPowershotBonus,
-      isServe:        card.type === 'serve',
-      guided:    card.guided,
-      powershot: card.powershot,
-      complex:   card.complex,
-      dropshot:  card.dropshot,
-      approach:  card.approach,
-      smashable: card.smashable,
-      antiNet:   card.antiNet,
-      volley:    card.volley,
-      overhead:  card.overhead,
-    };
+    recordTurn(false, pendingPowershotBonus);
 
     incomingPower = shotPower;
     incomingSpin  = shotSpin;
@@ -508,6 +557,7 @@ function playCard(playerIndex, cardIndex) {
   } else {
     // Serve fault
     if (card.type === 'serve') {
+      recordTurn(true, 0);
       if (serveAttempt === 1) {
         log(`${player.name} — ОШИБКА подачи <strong>${card.name}</strong> ${cardStat}! Вторая подача.<br>${rollStr} против ${vsStr} ✗`);
         displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
@@ -526,30 +576,35 @@ function playCard(playerIndex, cardIndex) {
       return;
     }
 
-    // Normal miss
+    // Normal miss. Fatigue is charged on the pre-run in-position state (the
+    // reposition helpers below never touch player.inPosition, so reading it
+    // after them would be equivalent — kept explicit for clarity).
+    const missedOutOfPosition = !player.inPosition;
+
+    // Mirror the success branch: a sideways out-of-position return runs to the
+    // opposite corner as part of reaching the ball, so log that move BEFORE the
+    // shot line (in Russian) and draw the trajectory from the new corner.
+    const oopSidewaysReturn =
+      player.positionBeforeDropshot === null && !card.approach &&
+      !player.inPosition && card.type === 'return' && !player.wasLobbed;
+    if (oopSidewaysReturn) {
+      const before = player.position;
+      updatePositionAfterOutOfPositionReturn(player);
+      log(player.position !== before
+        ? `${player.name} смещается: ${formatPosition(player.position)}`
+        : `${player.name} остаётся: ${formatPosition(player.position)}`);
+    } else if (player.positionBeforeDropshot !== null) {
+      applyDropshotPositioning(player, card);
+    } else if (!player.inPosition && card.type === 'return' && player.wasLobbed) {
+      log(`${player.name} остаётся: ${formatPosition(player.position)}`);
+    }
+
     log(`${player.name} ПРОМАХ <strong>${card.name}</strong> ${cardStat}! | ${posStr}${extras}<br>${rollStr} против ${vsStr} ✗`);
     displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
+    recordTurn(true, 0);
 
     player.fatigue += v1;
-    if (!player.inPosition) player.fatigue += v2;
-
-    if (player.positionBeforeDropshot !== null) {
-      applyDropshotPositioning(player, card);
-    } else {
-      if (!player.inPosition && card.type === 'return') {
-        if (player.wasLobbed) {
-          log(`${player.name} stays at ${formatPosition(player.position)}`);
-        } else {
-          const positionBefore = player.position;
-          updatePositionAfterOutOfPositionReturn(player);
-          if (player.position !== positionBefore) {
-            log(`${player.name} moves to ${formatPosition(player.position)}`);
-          } else {
-            log(`${player.name} stays at ${formatPosition(player.position)}`);
-          }
-        }
-      }
-    }
+    if (missedOutOfPosition) player.fatigue += v2;
 
     const playerSide = playerIndex === 0 ? 'p1' : 'p2';
     drawShotLine(player.position, getTargetPosition(player.position, card.type, card, opponent.position), playerSide);

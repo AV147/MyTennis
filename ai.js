@@ -25,6 +25,7 @@ function aiSetVersion(playerIndex, version) {
 // ── Turn execution (dispatches to selected engine) ─────────────────────────
 
 function aiPlayTurn(playerIndex) {
+  if (pendingPointEnd) return;               // board frozen until "Новый розыгрыш"
   if (currentPlayer !== playerIndex) return;
   aiGetEngine(playerIndex).playTurn(playerIndex);
 }
@@ -55,6 +56,7 @@ function aiScheduleNext(playerIndex) {
 
   aiTimeoutHandle[playerIndex] = setTimeout(() => {
     aiTimeoutHandle[playerIndex] = null;
+    if (pendingPointEnd)               return;
     if (!aiAutoMode[playerIndex])      return;
     if (currentPlayer !== playerIndex) return;
     aiPlayTurn(playerIndex);
@@ -66,6 +68,7 @@ function aiScheduleNext(playerIndex) {
  * Pauses if a human opponent still has a reposition pending.
  */
 function aiCheckAutoTrigger() {
+  if (pendingPointEnd) return;               // wait for "Новый розыгрыш"
   const idx = currentPlayer;
   if (!aiAutoMode[idx]) return;
 

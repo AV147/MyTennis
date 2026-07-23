@@ -40,6 +40,16 @@ function createPowerDieElement(value) {
   return die;
 }
 
+/** Empty both dice blocks (called when a new point / match starts). */
+function clearDiceDisplays() {
+  document.querySelectorAll('.player-dice').forEach(el => {
+    const display = el.querySelector('.dice-display');
+    if (display) display.innerHTML = '';
+    const label = el.querySelector('.app-dice-label');
+    if (label) label.innerHTML = '🎲 Бросок';
+  });
+}
+
 /**
  * Display a dice roll.
  * @param {number} powershotBonus - pre-rolled powershot bonus die (0 if none)

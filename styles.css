@@ -99,6 +99,16 @@ body {
   margin-bottom: 8px;
 }
 
+.ct-miss {
+  color: #c0392b;
+  font-weight: bold;
+  font-size: 11px;
+  background: #fdeaea;
+  border: 1px solid #c0392b;
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
 .ct-difficulty {
   background: #f0f4f8;
   border-radius: 6px;
@@ -166,6 +176,10 @@ body {
   display: block;
 }
 .draw-btn:hover { background: #1e8449; }
+
+/* Point-end pause: starts the next point (replaces Draw until pressed) */
+.new-point-btn { background: #d4a017; }
+.new-point-btn:hover { background: #b8860b; }
 
 /* ===== Cards ===== */
 .hand { display: flex; flex-wrap: wrap; gap: 8px; }
