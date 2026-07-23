@@ -992,6 +992,22 @@ button { font-family: inherit; }
   border-color: #30b040;
   box-shadow: 0 4px 16px rgba(26,122,42,.45), inset 0 1px 0 rgba(255,255,255,.15);
 }
+/* first-run lock: "Играть" disabled until the tutorial has been seen */
+.menu-btn-play.menu-btn-locked {
+  background: #263140;
+  border-color: #34506a;
+  color: #6a819a;
+  box-shadow: none;
+  cursor: not-allowed;
+  filter: none;
+}
+.menu-lock-hint {
+  display: none;
+  margin-top: -4px;
+  font-size: 11px;
+  color: #e6b84f;
+  letter-spacing: 0.02em;
+}
 
 .menu-difficulty {
   background: #141c2c;
