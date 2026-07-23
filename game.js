@@ -29,12 +29,18 @@ let markedCardIndices = [-1, -1];
 // Info about the last successfully played shot — drives the Текущий ход panel
 let lastTurnInfo = null;
 
+// Point-end pause: after a point ends the board keeps the final positions,
+// shot line and dice roll on screen until "Новый розыгрыш" is pressed.
+let pendingPointEnd = false;
+let pendingGameReshuffle = false;
+
 const gameLog = [];
 function log(msg) { gameLog.push(msg); }
 
 // ===== ACTIVE DISCARD MECHANIC =====
 
 function markCardForDiscard(playerIndex, cardIndex, checked) {
+  if (pendingPointEnd) return;
   if (checked) {
     markedCardIndices[playerIndex] = cardIndex;
   } else {
@@ -109,6 +115,7 @@ function getCardCategory(card) {
 // ===== DRAW / DISCARD ACTIONS =====
 
 function manualDrawCard(playerIndex) {
+  if (pendingPointEnd) return;
   if (playerIndex !== currentPlayer) {
     log(`Сейчас не ход ${players[playerIndex].name}!`);
     render(players, currentPlayer, gameLog);
@@ -137,6 +144,7 @@ function manualDrawCard(playerIndex) {
 }
 
 function discardForPosition(playerIndex, cardIndex, newPosition) {
+  if (pendingPointEnd) return;
   if (canDiscardForPosition !== playerIndex) {
     log(`${players[playerIndex].name} сейчас не может сбрасывать для перебежки!`);
     render(players, currentPlayer, gameLog);
@@ -235,6 +243,26 @@ function endPoint(winnerIndex) {
     tennisP2Points = 0;
     pointCount = 0;
     servingPlayer = 1 - servingPlayer;
+    // Deck reshuffle waits for confirmNewPoint so the final board state
+    // (hands, positions, shot line, dice) stays on screen during the pause.
+    pendingGameReshuffle = true;
+  } else {
+    log(`<strong>Очко → ${players[winnerIndex].name}! Счёт: ${formatTennisScore()}</strong>`);
+  }
+
+  // Freeze the board: the next point starts only when the player presses
+  // "Новый розыгрыш" (confirmNewPoint). No repositioning during the pause.
+  pendingPointEnd = true;
+  canDiscardForPosition = -1;
+}
+
+// "Новый розыгрыш" button — actually starts the next point.
+function confirmNewPoint() {
+  if (!pendingPointEnd) return;
+  pendingPointEnd = false;
+
+  if (pendingGameReshuffle) {
+    pendingGameReshuffle = false;
     // Reshuffle both decks at the start of each new game (serve switch)
     players.forEach(p => {
       p.discard.push(...p.hand, ...p.temporaryRemovedServes);
@@ -243,11 +271,17 @@ function endPoint(winnerIndex) {
       p.deck = shuffle([...p.deck, ...p.discard]);
       p.discard = [];
     });
-  } else {
-    log(`<strong>Очко → ${players[winnerIndex].name}! Счёт: ${formatTennisScore()}</strong>`);
   }
 
+  // Clear the previous point's visuals
+  if (typeof currentShotLine !== 'undefined' && currentShotLine) {
+    currentShotLine.remove();
+    currentShotLine = null;
+  }
+  if (typeof clearDiceDisplays === 'function') clearDiceDisplays();
+
   startNewPoint();
+  render(players, currentPlayer, gameLog);
 }
 
 function startGame() {
@@ -259,6 +293,8 @@ function startGame() {
   pointCount    = 0;
   pendingPowershotBonus = 0;
   lastTurnInfo  = null;
+  pendingPointEnd = false;
+  pendingGameReshuffle = false;
   // Shuffle once at game start — decks persist across points from here
   players.forEach((p, idx) => {
     p.deck    = shuffle([...PLAYER_DECKS[idx]]);
@@ -267,6 +303,11 @@ function startGame() {
     p.temporaryRemovedServes = [];
   });
   log('=== 🎾 Начало матча ===');
+  if (typeof currentShotLine !== 'undefined' && currentShotLine) {
+    currentShotLine.remove();
+    currentShotLine = null;
+  }
+  if (typeof clearDiceDisplays === 'function') clearDiceDisplays();
   startNewPoint();
   render(players, currentPlayer, gameLog);
 }
@@ -326,6 +367,7 @@ function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
 // ===== MAIN PLAY ACTION =====
 
 function playCard(playerIndex, cardIndex) {
+  if (pendingPointEnd) return;
   const player   = players[playerIndex];
   const opponent = players[1 - playerIndex];
   const card     = player.hand[cardIndex];

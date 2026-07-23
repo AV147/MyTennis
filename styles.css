@@ -167,6 +167,10 @@ body {
 }
 .draw-btn:hover { background: #1e8449; }
 
+/* Point-end pause: starts the next point (replaces Draw until pressed) */
+.new-point-btn { background: #d4a017; }
+.new-point-btn:hover { background: #b8860b; }
+
 /* ===== Cards ===== */
 .hand { display: flex; flex-wrap: wrap; gap: 8px; }
 

@@ -75,6 +75,9 @@ function render(players, currentPlayer, gameLog) {
   function renderPlayerPanel(player, playerIndex) {
     const isActive = currentPlayer === playerIndex;
     const isAuto   = aiAutoMode[playerIndex];
+    // While the point-end pause is on, the board is frozen: no play/draw/mark,
+    // only the "Новый розыгрыш" button.
+    const canAct   = isActive && !pendingPointEnd;
 
     // When auto mode is on, show card backs instead of card details
     // (unless AI_HAND_HIDDEN is turned off, e.g. in old_index.html for debugging)
@@ -90,7 +93,7 @@ function render(players, currentPlayer, gameLog) {
         const category  = getCardCategory(card);
         const dimmed    = '';
         const isMarked  = isActive && markedCardIndices[playerIndex] === idx;
-        const canMark   = isActive && card.type !== 'serve' && incomingPower > 0;
+        const canMark   = canAct && card.type !== 'serve' && incomingPower > 0;
         const markClass = isMarked && card.color ? `card-marked-${card.color}` : '';
 
         const badges = [
@@ -106,7 +109,7 @@ function render(players, currentPlayer, gameLog) {
         ].filter(Boolean).join('');
 
         // A card marked for active discard cannot be played itself — uncheck first
-        const playBtn = isActive
+        const playBtn = canAct
           ? (isMarked
               ? `<button class="play-btn play-btn-disabled" disabled>🔒 В сбросе</button>`
               : `<button class="play-btn${!playable ? ' play-btn-disabled' : ''}"
@@ -115,7 +118,7 @@ function render(players, currentPlayer, gameLog) {
           : '';
 
         return `
-          <div class="card card-${category} ${dimmed} ${markClass}">
+          <div class="card card-${category} ${dimmed} ${markClass}" onclick="handleCardTap(event, ${playerIndex}, ${idx})">
             <strong class="card-name">${card.name}</strong>
             <p class="card-desc">${card.description}</p>
             <div class="card-stats"><span>⚡${card.power}</span><span>🌀${card.spin}</span></div>
@@ -137,16 +140,24 @@ function render(players, currentPlayer, gameLog) {
       }).join('');
     }
 
-    const drawBtn = isActive && !isAuto
+    const drawBtn = canAct && !isAuto
       ? `<button class="draw-btn" onclick="manualDrawCard(${playerIndex})">🃏 Добор (${player.hand.length}/${HAND_SIZE})</button>`
+      : '';
+
+    // Point-end pause: replaces Draw/Pass until the next point is confirmed
+    const newPointBtn = pendingPointEnd && !isAuto
+      ? `<button class="draw-btn new-point-btn" onclick="confirmNewPoint()">🎾 Новый розыгрыш</button>`
       : '';
 
     const posLabel = player.inPosition
       ? '<span class="in-pos">✓ В позиции</span>'
       : '<span class="out-pos">✗ Вне позиции</span>';
 
+    const aiBadgeLabel = { 1: 'ИИ v1', 2: 'ИИ: Легко', 3: 'ИИ: Сложно' }[aiVersion[playerIndex]]
+      || ('ИИ v' + aiVersion[playerIndex]);
+
     return `
-      <h2 class="player-title">${player.name}${isActive ? ' <span class="turn-badge">Ход</span>' : ''}${isAuto ? ' <span class="ai-badge">🤖 ИИ v' + aiVersion[playerIndex] + '</span>' : ''}</h2>
+      <h2 class="player-title">${player.name}${isActive ? ' <span class="turn-badge">Ход</span>' : ''}${isAuto ? ' <span class="ai-badge">🤖 ' + aiBadgeLabel + '</span>' : ''}</h2>
       <div class="player-stats">
         <span class="st-fat"><strong>Усталость:</strong> ${player.fatigue} <em>[${fatigueLabel}]</em></span>
         <span class="st-pos">${formatPosition(player.position)} ${posLabel}</span>
@@ -154,7 +165,7 @@ function render(players, currentPlayer, gameLog) {
         <span class="st-hand"><strong>Рука:</strong> ${player.hand.length}</span>
       </div>
       ${renderAiControls(playerIndex)}
-      ${drawBtn}
+      ${newPointBtn}${drawBtn}
       <div class="hand">${cardHtml}</div>`;
   }
 
@@ -174,6 +185,90 @@ function render(players, currentPlayer, gameLog) {
 
   // Hook: schedule AI move if auto mode is on for current player
   if (typeof aiCheckAutoTrigger === 'function') aiCheckAutoTrigger();
+}
+
+// ===== CARD DETAIL SHEET (mobile) ==========================================
+// Tapping a card's body (not its buttons) opens a bottom sheet that explains
+// the card's stats and every special property in plain Russian. index.html
+// provides #card-overlay; old_index.html doesn't — there this is a no-op.
+
+function handleCardTap(event, playerIndex, cardIndex) {
+  if (!document.getElementById('card-overlay')) return;
+  if (event.target.closest('button, input, label')) return;
+  showCardSheet(playerIndex, cardIndex);
+}
+
+function cardPropertyRows(card) {
+  const rows = [];
+  const add = (icon, title, text) =>
+    rows.push(`<div class="cs-prop"><span class="cs-prop-icon">${icon}</span><div><strong>${title}</strong> — ${text}</div></div>`);
+
+  add('⚡', `Сила ${card.power}`,
+    'входит в сложность удара для соперника (Сила + Спин) и в вашу собственную сложность исполнения (Сила − Спин): чем сильнее бьёте, тем труднее и вам.');
+  add('🌀', `Спин ${card.spin}`,
+    'усложняет приём сопернику (Сила + Спин), а вам облегчает исполнение (вычитается из вашей сложности).');
+
+  if (card.type === 'serve')
+    add('🎾', 'Подача', 'разыгрывается только в начале розыгрыша. Даётся две попытки: ошибка на обеих — очко сопернику.');
+  if (card.guided)
+    add('🎯', 'Прицельный (Guided)', '+1 к вашей сложности исполнения — удар труднее, зато летит точно по выбранному направлению.');
+  if (card.complex)
+    add('🎲', 'Сложный (Complex)', 'из вашего броска дополнительно вычитается 1к3.');
+  if (card.powershot)
+    add('💥', 'Мощный удар (+1к6)', 'после успеха бросается красный кубик — его значение добавляется к сложности следующего удара соперника.');
+  if (card.dropshot)
+    add('🪶', 'Укороченный (Drop)', 'соперник вынужден бежать к сетке — он окажется вне позиции, если не стоял у сетки в момент удара.');
+  if (card.approach)
+    add('🏃', 'Выход к сетке (Approach)', 'после успешного удара вы сразу занимаете зону Сетка.');
+  if (card.smashable)
+    add('☁️', 'Свеча (Smashable)', 'соперник может ответить на этот удар смэшем (Overhead).');
+  if (card.antiNet)
+    add('🛡️', 'Анти-сетка (Anti-Net)', 'выбивает из позиции даже соперника, стоящего у сетки.');
+  if (card.volley)
+    add('🥅', 'Слёта (Volley)', 'играется только стоя у сетки.');
+  if (card.overhead)
+    add('🔨', 'Смэш (Overhead)', 'играется только в ответ на удар с меткой Smashable; можно играть у сетки.');
+  if (card.direction === 'line')
+    add('↔️', 'По линии', 'соперник окажется вне позиции, если стоит в той же зоне, что и вы.');
+  if (card.direction === 'cross')
+    add('⤢', 'По диагонали', 'соперник окажется вне позиции, если стоит в другой зоне, чем вы.');
+  if (card.target)
+    add('📍', `Цель: ${formatPosition(card.target)}`, 'соперник окажется вне позиции, если стоит не в этой зоне.');
+  if (card.targetOpposite)
+    add('📍', 'В свободный угол', 'всегда целится туда, где соперника нет — он вне позиции, если не стоит у сетки.');
+
+  if (card.color === 'red')
+    add('🔴', 'Красная карта', 'можно сбросить вместе с другим ударом (отметьте её галочкой) — тот получит +2 к Силе.');
+  if (card.color === 'blue')
+    add('🔵', 'Синяя карта', 'можно сбросить вместе с другим ударом — тот получит +1 к Вращению.');
+  if (card.color === 'green')
+    add('🟢', 'Зелёная карта', 'можно сбросить вместе с другим ударом — после удара вы бесплатно доберёте карту.');
+
+  return rows.join('');
+}
+
+function showCardSheet(playerIndex, cardIndex) {
+  const overlay = document.getElementById('card-overlay');
+  const card = players[playerIndex] && players[playerIndex].hand[cardIndex];
+  if (!overlay || !card) return;
+
+  const catLabel = { serve: 'Подача', volley: 'Volley', attack: 'Атака', defense: 'Защита' }[getCardCategory(card)];
+  document.getElementById('card-sheet-body').innerHTML = `
+    <div class="cs-head-row">
+      <strong class="cs-name">${card.name}</strong>
+      <span class="cs-cat cs-cat-${getCardCategory(card)}">${catLabel}</span>
+    </div>
+    <p class="cs-desc">${card.description}</p>
+    <div class="cs-props">${cardPropertyRows(card)}</div>`;
+  overlay.classList.add('open');
+  if (typeof window !== 'undefined' && window.__tutorialNotify) window.__tutorialNotify('cardsheet-open');
+}
+
+function closeCardSheet() {
+  const overlay = document.getElementById('card-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  if (typeof window !== 'undefined' && window.__tutorialNotify) window.__tutorialNotify('cardsheet-close');
 }
 
 function renderCurrentTurnPanel() {
