@@ -183,9 +183,9 @@
 
     // ── Load v3 weights from file and configure AI ──────────
     window.addEventListener('load', () => {
-      // v3-weights(4).json predates the LayerNorm/LeakyReLU change and is not
-      // compatible with the current network — retrain with train-v3-node.js
-      // rather than restoring it.
+      // Weight sets predating the LayerNorm/LeakyReLU network are incompatible
+      // (same dimensions, meaningless values) — retrain with train-v3-node.js
+      // rather than restoring one from git history.
       fetch('v3-weights-pure.json')
         .then(res => res.json())
         .then(weightsData => {

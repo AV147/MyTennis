@@ -57,9 +57,12 @@ bigger bonus costs more. Don't "fix" it.
 - `ai-v1/v2.js` — heuristics (v2 = safe baseline opponent, never nets).
 - `ai-v3.js` — policy network 83→64→32, **LayerNorm + LeakyReLU**, four heads
   (draw/card/discard/move). `index.html` ships `v3-weights-pure.json` (~59% vs
-  v2). **`v3-weights(4).json` predates LayerNorm and is incompatible** — same
-  dimensions, silently meaningless values. Same for any stale `v3weights` in
-  browser localStorage (old_index auto-loads it; press "↺ Reset" once).
+  v2); `v3-weights-style.json` is a compatible spare set. **Weight sets that
+  predate the LayerNorm/LeakyReLU network are incompatible** — same
+  dimensions, silently meaningless values (the legacy `v3-weights(4).json`
+  was deleted for this reason; it survives in git history). Same trap for any
+  stale `v3weights` in browser localStorage (old_index auto-loads it; press
+  "↺ Reset" once).
 - Training: `node train-v3-node.js --points 300000 --out v3-weights-pure.json`
   (~7 min; `--resume` chains phases, `--opp v2|self`, `--profile pure|style`).
   Rewards are **outcome-only ±1** — do NOT reintroduce per-hit rewards
