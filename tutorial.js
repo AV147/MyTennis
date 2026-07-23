@@ -258,6 +258,8 @@ function startTutorial() {
 function endTutorial() {
   tutActive = false;
   tutCurrent = null;
+  // Completing OR skipping the tutorial both land here — unlock "Играть".
+  if (typeof markTutorialSeen === 'function') markTutorialSeen();
   window.removeEventListener('resize', tutPosition);
   if (!tutEls) return;
   [...tutEls.shades, tutEls.blocker, tutEls.ring, tutEls.tip]

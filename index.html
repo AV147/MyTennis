@@ -148,6 +148,7 @@
       <div class="menu-title">MyTennis</div>
       <div class="menu-sub">Карточный теннис</div>
       <button class="menu-btn menu-btn-play" onclick="menuPlay()">▶&nbsp; Играть</button>
+      <div id="play-lock-hint" class="menu-lock-hint">🎓 Сначала пройдите обучение</div>
       <div class="menu-difficulty">
         <div class="menu-diff-label">Сложность ИИ</div>
         <div class="menu-diff-toggle">
@@ -241,10 +242,34 @@
       if (window.confirm(q)) go();
     }
 
+    // ── First-run tutorial gate ─────────────────────────────
+    // On the very first launch "Играть" is locked until the tutorial has been
+    // seen (completed OR skipped — both call markTutorialSeen via endTutorial).
+    // Fail-open: if localStorage is unavailable, treat it as already seen so a
+    // user can never get stuck unable to unlock.
+    function tutorialSeen() {
+      try { return localStorage.getItem('mytennis-tutorial-seen') === '1'; }
+      catch (e) { return true; }
+    }
+    function markTutorialSeen() {
+      try { localStorage.setItem('mytennis-tutorial-seen', '1'); } catch (e) {}
+      updatePlayLock();
+    }
+    function updatePlayLock() {
+      const locked = !tutorialSeen();
+      const playBtn = document.querySelector('.menu-btn-play');
+      if (playBtn) {
+        playBtn.disabled = locked;
+        playBtn.classList.toggle('menu-btn-locked', locked);
+      }
+      const hint = document.getElementById('play-lock-hint');
+      if (hint) hint.style.display = locked ? 'block' : 'none';
+    }
+
     // ── Main menu ───────────────────────────────────────────
     function openMenu()  { document.getElementById('menu-overlay').classList.add('open'); }
     function closeMenu() { document.getElementById('menu-overlay').classList.remove('open'); }
-    function menuPlay()  { closeMenu(); }
+    function menuPlay()  { if (!tutorialSeen()) return; closeMenu(); }
     function menuTutorial() {
       closeMenu();
       if (typeof startTutorial === 'function') startTutorial();
@@ -342,6 +367,7 @@
       let savedDifficulty = 'hard';
       try { savedDifficulty = localStorage.getItem('mytennis-difficulty') || 'hard'; } catch (e) {}
       setDifficulty(savedDifficulty, false);
+      updatePlayLock();         // lock "Играть" on first run until tutorial seen
       aiSetAutoMode(1, true);   // P2 plays automatically
     });
   </script>
