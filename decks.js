@@ -261,8 +261,9 @@ const PLAYER_DECKS = [
   // Player 1 deck
 
   buildDeck({
-  KickServe:2,
-  StrongForehand:3, 
+  FlatServe:1,
+  KickServe:1,
+  StrongForehand:3,
   WeakForehand:3 ,
   WeakDownTheLine:3, 
   WeakCrossCourt:3,
@@ -284,8 +285,9 @@ const PLAYER_DECKS = [
   }),
 
   buildDeck({
-  KickServe:2,
-  StrongForehand:3, 
+  FlatServe:1,
+  KickServe:1,
+  StrongForehand:3,
   WeakForehand:3 ,
   WeakDownTheLine:3, 
   WeakCrossCourt:3,
