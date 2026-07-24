@@ -340,6 +340,9 @@
 
     // ── Telegram Mini App init ──────────────────────────────
     const tg = window.Telegram?.WebApp;
+    // Only drive the native MainButton in a real Telegram client — in a plain
+    // browser (preview) tg.platform is 'unknown', so we keep the in-DOM buttons.
+    const inTelegram = !!(tg && tg.platform && tg.platform !== 'unknown');
     if (tg) {
       tg.ready();
       tg.expand();
@@ -348,6 +351,40 @@
       tg.setBackgroundColor('#0d0d1a');
       // Horizontal card scroll conflicts with swipe-to-close (TG 7.7+)
       if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+    }
+
+    // ── Native MainButton: one contextual action, always under the thumb ──
+    // Взять карту / Передать ход / Новый розыгрыш, depending on game state.
+    // In Telegram the equivalent in-layout buttons are hidden (frees space).
+    if (inTelegram && tg.MainButton) {
+      document.body.classList.add('tg-native-buttons');
+      tg.MainButton.onClick(onMainButtonClick);
+    }
+
+    function onMainButtonClick() {
+      if (typeof pendingPointEnd !== 'undefined' && pendingPointEnd) { confirmNewPoint(); return; }
+      if (typeof canDiscardForPosition !== 'undefined' && canDiscardForPosition === 0) { aiPassTurn(0); return; }
+      if (typeof currentPlayer !== 'undefined' && currentPlayer === 0 &&
+          typeof aiAutoMode !== 'undefined' && !aiAutoMode[0]) { manualDrawCard(0); return; }
+    }
+
+    // Called at the end of every render() (hook in render.js).
+    function updateMainButton() {
+      if (!inTelegram || !tg.MainButton) return;
+      const mb = tg.MainButton;
+      // Keep it out of the way during the spotlight tutorial (which uses the
+      // in-layout buttons, temporarily re-shown via the :not(.tutorial-active) rule).
+      if (typeof tutActive !== 'undefined' && tutActive) { try { mb.hide(); } catch (e) {} return; }
+
+      let text = null, color = null;
+      if (pendingPointEnd)                 { text = '🎾 Новый розыгрыш'; color = '#c9a227'; }
+      else if (canDiscardForPosition === 0) { text = '✓ Передать ход';    color = '#e67e22'; }
+      else if (currentPlayer === 0 && !aiAutoMode[0] && players[0].hand.length < HAND_SIZE) {
+                                             text = '🃏 Взять карту';     color = '#25a035'; }
+      if (!text) { try { mb.hide(); } catch (e) {} return; }
+      try { mb.setText(text); } catch (e) {}
+      try { mb.setParams({ color, text_color: '#ffffff' }); } catch (e) {}
+      try { mb.show(); } catch (e) {}
     }
 
     // ── Load v3 weights from file and configure AI ──────────

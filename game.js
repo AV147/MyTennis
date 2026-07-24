@@ -37,6 +37,20 @@ let pendingGameReshuffle = false;
 const gameLog = [];
 function log(msg) { gameLog.push(msg); }
 
+// ===== TELEGRAM HAPTICS (no-op outside the Mini App) =====
+// light tick on draw, medium impact on playing a card, success/error on
+// winning/losing a point. Fires only for the human (player 0).
+function tgHaptic(kind) {
+  const hf = (typeof window !== 'undefined') && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback;
+  if (!hf) return;
+  try {
+    if      (kind === 'draw') hf.impactOccurred('light');
+    else if (kind === 'play') hf.impactOccurred('medium');
+    else if (kind === 'win')  hf.notificationOccurred('success');
+    else if (kind === 'lose') hf.notificationOccurred('error');
+  } catch (e) { /* older client — ignore */ }
+}
+
 // ===== ACTIVE DISCARD MECHANIC =====
 
 function markCardForDiscard(playerIndex, cardIndex, checked) {
@@ -130,6 +144,7 @@ function manualDrawCard(playerIndex) {
 
   const { v2 } = getFatigueIncrements();
   drawCard(player, log);
+  if (playerIndex === 0) tgHaptic('draw');
   log(`${player.name} берёт карту${v2 > 0 ? ' (+1 усталости)' : ''}`);
   markedCardIndices[playerIndex] = -1; // drawing clears any active mark
 
@@ -231,6 +246,7 @@ function startNewPoint() {
 }
 
 function endPoint(winnerIndex) {
+  tgHaptic(winnerIndex === 0 ? 'win' : 'lose');   // player 0 is the human
   if (winnerIndex === 0) tennisP1Points++;
   else                   tennisP2Points++;
 
@@ -274,10 +290,7 @@ function confirmNewPoint() {
   }
 
   // Clear the previous point's visuals
-  if (typeof currentShotLine !== 'undefined' && currentShotLine) {
-    currentShotLine.remove();
-    currentShotLine = null;
-  }
+  if (typeof clearShotLine === 'function') clearShotLine();
   if (typeof clearDiceDisplays === 'function') clearDiceDisplays();
 
   startNewPoint();
@@ -303,10 +316,7 @@ function startGame() {
     p.temporaryRemovedServes = [];
   });
   log('=== 🎾 Начало матча ===');
-  if (typeof currentShotLine !== 'undefined' && currentShotLine) {
-    currentShotLine.remove();
-    currentShotLine = null;
-  }
+  if (typeof clearShotLine === 'function') clearShotLine();
   if (typeof clearDiceDisplays === 'function') clearDiceDisplays();
   startNewPoint();
   render(players, currentPlayer, gameLog);
@@ -402,6 +412,7 @@ function playCard(playerIndex, cardIndex) {
 
   player.hand.splice(cardIndex, 1);
   player.discard.push(card);
+  if (playerIndex === 0) tgHaptic('play');   // medium impact — the human strikes
 
   // ===== ACTIVE DISCARD FOR EFFECT =====
   let bonusPower = 0;

@@ -921,6 +921,16 @@ button { font-family: inherit; }
   padding-bottom: max(2px, env(safe-area-inset-bottom));
 }
 
+/* In a real Telegram client the draw / pass / new-point actions live on the
+   native MainButton, so hide their in-layout twins to free space. During the
+   spotlight tutorial they're re-shown so the coach-marks have something to point
+   at (the MainButton is hidden then instead). */
+body.tg-native-buttons:not(.tutorial-active) .app-player-panel .draw-btn,
+body.tg-native-buttons:not(.tutorial-active) .app-player-panel .new-point-btn,
+body.tg-native-buttons:not(.tutorial-active) .app-player-panel .ai-btn-pass {
+  display: none;
+}
+
 /* ═══════════════════════════════════════════════════
    6. NEW POINT BUTTON (point-end pause)
    ═══════════════════════════════════════════════════ */

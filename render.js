@@ -141,7 +141,7 @@ function render(players, currentPlayer, gameLog) {
     }
 
     const drawBtn = canAct && !isAuto
-      ? `<button class="draw-btn" onclick="manualDrawCard(${playerIndex})">🃏 Добор (${player.hand.length}/${HAND_SIZE})</button>`
+      ? `<button class="draw-btn" onclick="manualDrawCard(${playerIndex})">🃏 Взять карту (${player.hand.length}/${HAND_SIZE})</button>`
       : '';
 
     // Point-end pause: replaces Draw/Pass until the next point is confirmed
@@ -182,6 +182,9 @@ function render(players, currentPlayer, gameLog) {
 
   // Hook: refresh the mobile event log (index.html only)
   if (typeof renderMobileLog === 'function') renderMobileLog();
+
+  // Hook: drive the Telegram MainButton to the current contextual action
+  if (typeof updateMainButton === 'function') updateMainButton();
 
   // Hook: schedule AI move if auto mode is on for current player
   if (typeof aiCheckAutoTrigger === 'function') aiCheckAutoTrigger();
