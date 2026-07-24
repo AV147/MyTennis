@@ -250,6 +250,7 @@ function showTutStep(id) {
 function startTutorial() {
   tutEnsureDom();
   tutActive = true;
+  document.body.classList.add('tutorial-active');  // re-show in-layout buttons under TG
   startGame();               // fresh match — the human serves the first point
   window.addEventListener('resize', tutPosition);
   showTutStep('welcome');
@@ -258,8 +259,11 @@ function startTutorial() {
 function endTutorial() {
   tutActive = false;
   tutCurrent = null;
+  document.body.classList.remove('tutorial-active');
   // Completing OR skipping the tutorial both land here — unlock "Играть".
   if (typeof markTutorialSeen === 'function') markTutorialSeen();
+  // Refresh so the MainButton picks the right action back up after the tutorial.
+  if (typeof updateMainButton === 'function') updateMainButton();
   window.removeEventListener('resize', tutPosition);
   if (!tutEls) return;
   [...tutEls.shades, tutEls.blocker, tutEls.ring, tutEls.tip]
