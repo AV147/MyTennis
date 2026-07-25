@@ -374,6 +374,30 @@ function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
   return oop;
 }
 
+// Where to draw the shot trajectory, refining the raw target for realism:
+//  • responding to a dropshot → the shooter ran up to the net, so start there;
+//  • opponent already at the net → the line stops at them, UNLESS it's a lob
+//    (Anti-Net + Smashable), which arcs over into the back corner it drives
+//    them to (the corner the shooter struck from);
+//  • curveSpin sets the arc height: effective spin 0–3, half-lob 4, lob 5.
+function shotVisual(player, opponent, card, shotOriginPosition, shotSpin) {
+  const respondingToDropshot = player.positionBeforeDropshot !== null;
+  const from = respondingToDropshot ? 'Net' : shotOriginPosition;
+
+  let to = getTargetPosition(shotOriginPosition, card.type, card, opponent.position);
+  if (opponent.position === 'Net') {
+    const isLob = card.antiNet && card.smashable;
+    to = isLob ? shotOriginPosition : 'Net';
+  }
+
+  let curveSpin;
+  if (card.antiNet && card.smashable) curveSpin = 5;                 // свеча (lob)
+  else if (card.smashable)            curveSpin = 4;                 // полусвечка
+  else curveSpin = Math.max(0, Math.min(3, shotSpin));              // 0–3 (3 via blue discard)
+
+  return { from, to, curveSpin };
+}
+
 // ===== MAIN PLAY ACTION =====
 
 function playCard(playerIndex, cardIndex) {
@@ -518,7 +542,9 @@ function playCard(playerIndex, cardIndex) {
     // Trajectory + opponent positioning, from the actual point of contact.
     const shotOriginPosition = player.position;
     const playerSide = playerIndex === 0 ? 'p1' : 'p2';
-    drawShotLine(shotOriginPosition, getTargetPosition(shotOriginPosition, card.type, card, opponent.position), playerSide);
+    const vis = shotVisual(player, opponent, card, shotOriginPosition, shotSpin);
+    const effPower = shotPower + (card.powershot ? pendingPowershotBonus : 0);
+    drawShotLine(vis.from, vis.to, playerSide, vis.curveSpin, effPower);
     opponent.inPosition = !calcOpponentOutOfPosition(card, shotOriginPosition, opponent);
 
     // Post-hit movement: approach / dropshot advance to the net. The sideways
@@ -618,7 +644,8 @@ function playCard(playerIndex, cardIndex) {
     if (missedOutOfPosition) player.fatigue += v2;
 
     const playerSide = playerIndex === 0 ? 'p1' : 'p2';
-    drawShotLine(player.position, getTargetPosition(player.position, card.type, card, opponent.position), playerSide);
+    const vis = shotVisual(player, opponent, card, player.position, shotSpin);
+    drawShotLine(vis.from, vis.to, playerSide, vis.curveSpin, shotPower);
 
     endPoint(1 - playerIndex);
     render(players, currentPlayer, gameLog);
