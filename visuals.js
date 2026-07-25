@@ -9,10 +9,12 @@ let BALL_DUR_SLOW = 4500;   // ms at power 2
 let BALL_DUR_FAST = 500;    // ms at power 14
 const POWER_MIN = 2, POWER_MAX = 14;
 
-// Arc height per unit of "curve spin" as a fraction of court height. Tuned so a
-// full lob (5) rises above the court into the score bar, while spins 1–3 arc
-// within the court. The on-screen clamp in drawShotLine caps the very top.
-const CURVE_UNIT_FRAC = 0.24;
+// Arc height per unit of "curve spin", as a fraction of the shot's LENGTH (not
+// the court): curvature then looks the same for a given spin regardless of shot
+// distance — short net exchanges stay flat, cross-court shots keep their arc.
+// A full lob (5) across the court rises into the score bar; the on-screen clamp
+// in drawShotLine caps the very top.
+const CURVE_SPAN_FRAC = 0.15;
 
 const SHOT_COLOR = '#CCFF00';   // tennis-ball yellow
 
@@ -86,9 +88,9 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
     if (!to) return;
   }
 
-  const H = court.getBoundingClientRect().height;
   const midX = (from.x + to.x) / 2, midY = (from.y + to.y) / 2;
-  const arc  = curveSpin * H * CURVE_UNIT_FRAC;   // upward (toward top of screen)
+  const chord = Math.hypot(to.x - from.x, to.y - from.y);   // shot length
+  const arc  = curveSpin * chord * CURVE_SPAN_FRAC;          // upward (toward top of screen)
   let cx = midX, cy = midY - arc;
   // Keep the top of the arc on-screen: it may rise above the court into the
   // score bar, but the peak stays at y >= 2px.
