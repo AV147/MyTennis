@@ -100,14 +100,17 @@ button { font-family: inherit; }
   border-radius: 8px;
   border: 2px solid rgba(255,255,255,.7);
   position: relative;
-  overflow: hidden;
+  /* visible so the ball's arc (a child of #court) can rise into the score bar;
+     the trajectory layer is the only thing that overflows. */
+  overflow: visible;
 }
 
-/* grass texture */
+/* grass texture — rounded to match the court now that overflow is visible */
 #court::before {
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: 8px;
   background: repeating-linear-gradient(
     90deg,
     rgba(255,255,255,.03) 0px, rgba(255,255,255,.03) 1px,

@@ -33,8 +33,8 @@ function ensureShotStyles() {
     @keyframes shot-line-draw { to { stroke-dashoffset: 0; } }
     @keyframes shot-ball-move { from { offset-distance: 0%; } to { offset-distance: 100%; } }
     .shot-ball {
-      position: fixed; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%;
-      z-index: 55; pointer-events: none; will-change: offset-distance; offset-rotate: 0deg;
+      position: absolute; top: 0; left: 0; width: 12px; height: 12px; border-radius: 50%;
+      z-index: 26; pointer-events: none; will-change: offset-distance; offset-rotate: 0deg;
       background: radial-gradient(circle at 35% 30%, #f4ffb8, ${SHOT_COLOR} 60%, #9fce00);
       box-shadow: 0 0 7px rgba(204,255,0,.9), 0 1px 2px rgba(0,0,0,.4);
     }
@@ -52,20 +52,21 @@ function clearShotLine() {
   if (currentShotBall) { currentShotBall.remove(); currentShotBall = null; }
 }
 
-// Centre of a court zone in viewport coordinates.
-function zoneCenter(id) {
+// Centre of a court zone, in coordinates relative to the court (so the shot
+// layer lives inside #court and scrolls with it instead of drifting).
+function zoneCenter(id, courtRect) {
   const el = document.querySelector(`[data-id="${id}"]`);
   if (!el) return null;
   const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  return { x: r.left + r.width / 2 - courtRect.left, y: r.top + r.height / 2 - courtRect.top };
 }
 
 /**
  * Draw an arced shot trajectory with a ball flying along it.
  * @param {number} curveSpin - 0 straight … 3 (blue discard), 4 half-lob, 5 lob
  * @param {number} power     - effective power (drives flight speed)
- * The overlay is viewport-fixed so a high lob can arc up into the score bar
- * without being clipped by the court's overflow:hidden.
+ * The layer lives inside #court (court-relative coords) so it scrolls with the
+ * court; #court has overflow:visible so a high lob still arcs into the score bar.
  */
 function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power = 5) {
   clearShotLine();
@@ -73,18 +74,19 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
 
   const court = document.getElementById('court');
   if (!court) return;
+  const courtRect = court.getBoundingClientRect();
 
-  const from = zoneCenter(`${playerSide}-${fromPosition}`);
+  const from = zoneCenter(`${playerSide}-${fromPosition}`, courtRect);
   if (!from) return;
 
   const opp = playerSide === 'p1' ? 'p2' : 'p1';
   let to;
   if (toPosition === 'MIDDLE') {
-    const bl = zoneCenter(`${opp}-BL`), br = zoneCenter(`${opp}-BR`);
+    const bl = zoneCenter(`${opp}-BL`, courtRect), br = zoneCenter(`${opp}-BR`, courtRect);
     if (!bl || !br) return;
     to = { x: (bl.x + br.x) / 2, y: (bl.y + br.y) / 2 };
   } else {
-    to = zoneCenter(`${opp}-${toPosition}`);
+    to = zoneCenter(`${opp}-${toPosition}`, courtRect);
     if (!to) return;
   }
 
@@ -92,17 +94,17 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
   const chord = Math.hypot(to.x - from.x, to.y - from.y);   // shot length
   const arc  = curveSpin * chord * CURVE_SPAN_FRAC;          // upward (toward top of screen)
   let cx = midX, cy = midY - arc;
-  // Keep the top of the arc on-screen: it may rise above the court into the
-  // score bar, but the peak stays at y >= 2px.
-  const minPeak = 2;
+  // Keep the top of the arc on-screen: it may rise above the court (coords are
+  // court-relative) into the score bar, but its peak stays at viewport y >= 2px.
+  const minPeak = 2 - courtRect.top;   // court-relative y mapping to viewport y=2
   if ((midY + cy) / 2 < minPeak) cy = 2 * minPeak - midY;
 
   const d = `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`;
   const dur = (ballDuration(power) / 1000) + 's';
 
-  // Line — viewport-fixed SVG, overflow visible so the arc isn't clipped.
+  // Line — SVG inside #court (overflow:visible keeps the arc unclipped).
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:54;overflow:visible;';
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:25;overflow:visible;';
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', d);
   path.setAttribute('fill', 'none');
@@ -110,7 +112,7 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
   path.setAttribute('stroke-width', '3');
   path.setAttribute('stroke-linecap', 'round');
   svg.appendChild(path);
-  document.body.appendChild(svg);
+  court.appendChild(svg);
   const len = path.getTotalLength();
   path.style.strokeDasharray = len;
   path.style.strokeDashoffset = len;
@@ -122,7 +124,7 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
   ball.className = 'shot-ball';
   ball.style.offsetPath = `path('${d}')`;
   ball.style.animation = `shot-ball-move ${dur} linear forwards`;
-  document.body.appendChild(ball);
+  court.appendChild(ball);
   currentShotBall = ball;
 }
 
