@@ -5,7 +5,7 @@ let currentShotBall = null;
 
 // Ball speed scales linearly with the shot's real power: weakest (2) is slowest,
 // strongest (14 = smash +2 discard +6 powershot die) is fastest.
-let BALL_DUR_SLOW = 4500;   // ms at power 2
+let BALL_DUR_SLOW = 4000;   // ms at power 2 (slowest/weakest shot)
 let BALL_DUR_FAST = 500;    // ms at power 14
 const POWER_MIN = 2, POWER_MAX = 14;
 
