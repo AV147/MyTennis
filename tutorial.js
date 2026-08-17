@@ -169,11 +169,31 @@ const TUT_NUMBERED = TUT_SCRIPT
   .filter(({ b }) => b.numbered !== false && ['text', 'play', 'move'].includes(b.kind))
   .map(({ i }) => i);
 
+// ── Pacing ─────────────────────────────────────────────────────────────────
+// A shot reads as three separate moments: the dice land, the spotlight moves
+// to whatever the next tooltip is about, and only then the ball flies. game.js
+// draws the trajectory the instant a card resolves, so during the tutorial the
+// call is held (see the drawShotLine wrapper) and released once the ring has
+// finished travelling — otherwise the ball crosses the court while the frame
+// is still sliding, which just looks smeared.
+const TUT_AFTER_PLAY_MS  = 420;   // dice on screen before the spotlight moves
+const TUT_AFTER_AI_MS    = 500;
+const TUT_AFTER_MOVE_MS  = 400;
+const TUT_RING_SETTLE_MS = 330;   // 60 ms of layout + the ring's .25s transition
+
 // ── State ──────────────────────────────────────────────────────────────────
 let tutActive  = false;
 let tutIndex   = -1;
 let tutEls     = null;
 let tutTimers  = [];
+
+// Trajectory held back until the spotlight settles. tutPendingShotBeat records
+// which beat produced the shot: the release timer belonging to that same beat
+// must ignore it, or the ball flies while the ring is still on its way to the
+// next target — the very smear this is meant to fix.
+let tutOrigDrawShotLine = null;
+let tutPendingShot      = null;
+let tutPendingShotBeat  = -1;
 
 // One-shot forced rolls, consumed by the hooks in shot-resolution.js
 let tutPendingRoll     = null;
@@ -190,6 +210,20 @@ function tutLater(fn, ms) {
   return h;
 }
 function tutClearTimers() { tutTimers.forEach(clearTimeout); tutTimers = []; }
+
+/**
+ * Release the trajectory game.js wanted to draw when the card resolved.
+ * Only fires once the script has moved past the beat that produced the shot,
+ * so the ball starts after the spotlight has arrived. `force` is for teardown.
+ */
+function tutFlushShot(force) {
+  if (!tutPendingShot || !tutOrigDrawShotLine) return;
+  if (!force && tutIndex === tutPendingShotBeat) return;
+  const args = tutPendingShot;
+  tutPendingShot = null;
+  tutPendingShotBeat = -1;
+  tutOrigDrawShotLine(...args);
+}
 
 // ── Hand stacking ──────────────────────────────────────────────────────────
 // startNewPoint() has already dealt a random hand by the time we get here, so
@@ -375,6 +409,7 @@ function tutEnterBeat(i) {
       return;
 
     case 'newpoint':
+      tutPendingShot = null; tutPendingShotBeat = -1;  // confirmNewPoint wipes the board anyway
       if (pendingPointEnd) confirmNewPoint();
       tutEnterBeat(i + 1);
       return;
@@ -454,6 +489,8 @@ function tutRenderTip(beat) {
   // setTimeout, not rAF — rAF stalls in backgrounded tabs and the tooltip
   // would never appear.
   tutLater(tutPosition, 60);
+  // Ball flies once the ring has finished moving, not while it slides.
+  tutLater(tutFlushShot, TUT_RING_SETTLE_MS);
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -463,6 +500,7 @@ function startTutorial() {
   tutActive = true;
   tutPendingRoll = null;
   tutPendingPowerDie = null;
+  tutPendingShot = null;
   document.body.classList.add('tutorial-active');  // re-show in-layout buttons under TG
   startGame();               // fresh match — the human serves the first point
   window.addEventListener('resize', tutPosition);
@@ -470,6 +508,7 @@ function startTutorial() {
 }
 
 function endTutorial() {
+  tutFlushShot(true);      // don't strand a trajectory that never got drawn
   tutActive = false;
   tutIndex = -1;
   tutClearTimers();
@@ -495,15 +534,15 @@ window.__tutorialNotify = function (note, playerIndex) {
   if (!beat) return;
 
   if (note === 'played' && playerIndex === 0 && beat.kind === 'play') {
-    tutAdvance(1000);   // let the dice and the trajectory land first
+    tutAdvance(TUT_AFTER_PLAY_MS);   // dice register, then the spotlight moves
     return;
   }
   if (note === 'played' && playerIndex === 1 && beat.kind === 'ai') {
-    tutAdvance(1200);
+    tutAdvance(TUT_AFTER_AI_MS);
     return;
   }
   if (note === 'reposition' && playerIndex === 0 && beat.kind === 'move') {
-    tutAdvance(500);
+    tutAdvance(TUT_AFTER_MOVE_MS);
     return;
   }
 };
@@ -518,6 +557,17 @@ window.__tutorialNotify = function (note, playerIndex) {
     render = function (...args) {
       orig(...args);
       if (tutActive) tutApplyLocks();
+    };
+  }
+
+  // Hold the trajectory back while the tutorial is running — tutRenderTip
+  // releases it once the spotlight has finished moving.
+  if (typeof drawShotLine === 'function') {
+    tutOrigDrawShotLine = drawShotLine;
+    drawShotLine = function (...args) {
+      if (!tutActive) { tutOrigDrawShotLine(...args); return; }
+      tutPendingShot = args;
+      tutPendingShotBeat = tutIndex;
     };
   }
 
