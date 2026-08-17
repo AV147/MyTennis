@@ -292,7 +292,11 @@ function renderCurrentTurnPanel() {
     ? `<span class="ct-p ct-p1">P1</span><span class="ct-arrow">&gt;&gt;&gt;&gt;</span><span class="ct-p ct-p2">P2</span>`
     : `<span class="ct-p ct-p1">P1</span><span class="ct-arrow">&lt;&lt;&lt;&lt;</span><span class="ct-p ct-p2">P2</span>`;
 
+  // The miss marker rides with the badges, not with ⚡/🌀: in the name row it
+  // pushed the stats onto a second line and cost the panel a row it doesn't
+  // have at 360×690.
   const badges = [
+    missed    && '<span class="ct-miss">✗ Промах</span>',
     guided    && '<span class="badge badge-guided">Guided</span>',
     powershot && '<span class="badge badge-power">+1d6</span>',
     complex   && '<span class="badge badge-complex">Complex</span>',
@@ -311,8 +315,6 @@ function renderCurrentTurnPanel() {
       <span class="ct-diff-value">${baseDifficulty}${powershotBonus > 0 ? ` + <span class="ct-power-bonus">⚡${powershotBonus}</span> = ${total}` : ''}</span>
     </div>`;
 
-  const missBadge = missed ? '<span class="ct-miss">✗ Промах</span>' : '';
-
   el.innerHTML = `
     <div class="ct-head">
       <div class="ct-title">Текущий ход</div>
@@ -320,7 +322,7 @@ function renderCurrentTurnPanel() {
     </div>
     <div class="ct-name-row">
       <span class="ct-card-name">${cardName}</span>
-      <span class="ct-card-stats">${missBadge}<span>⚡${power}</span><span>🌀${spin}</span></span>
+      <span class="ct-card-stats"><span>⚡${power}</span><span>🌀${spin}</span></span>
     </div>
     ${badges ? `<div class="card-badges">${badges}</div>` : ''}
     ${diffHtml}

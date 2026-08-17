@@ -285,36 +285,56 @@ button { font-family: inherit; }
 /* card name + stats share one line */
 .ct-name-row {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-start;   /* the name may run to two lines — pin both to the top */
+  gap: 2px 8px;
   min-width: 0;
 }
+/* Long names ("Сильный удар по диагонали", "Выход к сетке с укороченным") were
+   cut off after a handful of characters on one line; give them two. */
 .ct-card-name {
-  flex: 1;
+  /* Demand ~120px of run. The stats (⚡6 🌀2) fit alongside; add the wider
+     "✗ Промах" badge and they drop to their own line instead of squeezing the
+     name down to five characters a line. */
+  flex: 1 0 120px;   /* no shrink: the stats must wrap rather than crush the name */
   min-width: 0;
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.22;
   color: #f0f0f0;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .ct-card-stats {
   flex: 0 0 auto;
   display: flex;
   gap: 8px;
   font-size: 11px;
+  line-height: 1.45;         /* sits on the name's first line */
   color: #a8c0d8;
   font-weight: 600;
 }
+/* Sits in the panel's badge row, so it matches the badges around it. */
 .ct-miss {
+  flex: 0 0 auto;
   color: #ff8070;
   font-weight: 800;
-  font-size: 10px;
+  font-size: 8px;
+  letter-spacing: 0.04em;
   background: rgba(192,57,43,.18);
   border: 1px solid #c0392b;
-  border-radius: 4px;
-  padding: 0 5px;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+/* One line only: the panel has no room for a second badge row at 360×690, and
+   the same badges are on the card in hand (with full text in the card sheet).
+   ✗ Промах is emitted first, so what gets clipped is the least important. */
+.current-turn-panel .card-badges {
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 .ct-difficulty {
   font-size: 10px;
