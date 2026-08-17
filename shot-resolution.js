@@ -5,17 +5,36 @@
  * Total includes a fixed +6 base (minimum skill floor).
  */
 function rollDice(numDice, rollD3 = false) {
+  // Scripted roll (tutorial only): a one-shot override the hook consumes here.
+  // Absent in old_index.html and in the headless trainer (no `window` there),
+  // so both keep rolling normally.
+  const s = (typeof window !== 'undefined' && typeof window.__scriptedRoll === 'function')
+    ? window.__scriptedRoll()
+    : null;
+
   const diceValues = [];
   let total = 6; // fixed base
 
   for (let i = 0; i < numDice; i++) {
-    const value = Math.floor(Math.random() * 6) + 1;
+    const value = (s && s.dice && s.dice[i] != null)
+      ? s.dice[i]
+      : Math.floor(Math.random() * 6) + 1;
     diceValues.push(value);
     total += value;
   }
 
-  const d3Value = rollD3 ? Math.floor(Math.random() * 3) + 1 : 0;
+  const d3Value = rollD3
+    ? ((s && s.d3 != null) ? s.d3 : Math.floor(Math.random() * 3) + 1)
+    : 0;
   return { total, diceValues, d3Value };
+}
+
+/** The powershot's red 1d6, routed through the same scripted-roll escape hatch. */
+function rollPowerDie() {
+  const s = (typeof window !== 'undefined' && typeof window.__scriptedPowerDie === 'function')
+    ? window.__scriptedPowerDie()
+    : null;
+  return s != null ? s : Math.floor(Math.random() * 6) + 1;
 }
 
 /**

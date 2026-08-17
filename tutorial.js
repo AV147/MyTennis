@@ -1,134 +1,225 @@
-// ===== INTERACTIVE TUTORIAL (index.html only) ==============================
-// Spotlight walkthrough over the live game screen: dims everything except the
-// highlighted element and shows a tooltip. Informational steps advance with
-// "Далее"; interactive steps wait for the real action (tap a card, play the
-// serve, reposition/pass) — game functions are wrapped below to report them.
+// ===== SCRIPTED TUTORIAL (index.html only) =================================
+// Three points played on the real board, start to finish. Nothing is faked:
+// the player presses the real buttons, game.js resolves the shots and the
+// score really goes 15:0 → 30:0 → 40:0. What IS scripted is the randomness —
+// hands are dealt from a fixed list, every die is forced, and the opponent
+// plays a predetermined card each turn — so the numbers quoted in a tooltip
+// always match what's on screen.
+//
+// The script is a flat list of beats executed in order:
+//   deal     — lay out both hands (instant, invisible)
+//   newpoint — press "Новый розыгрыш" for the player, then fall through
+//   text     — tooltip + «Далее»
+//   play     — wait for the player to play one specific card
+//   move     — wait for the player to discard one card to reposition
+//   ai       — the opponent plays its scripted card after the usual delay
+//   end      — closing tooltip, hands the match back to the real AI
+//
+// Every other card/button is locked while a beat is waiting, so the script
+// cannot desync: the player can only make the move the tutorial expects.
 //
 // Started from the main menu via startTutorial(). Restarts the match so the
 // human always serves the first point.
 
 /* eslint-disable no-undef */
 
-const TUT_STEPS = {
-  welcome: {
-    target: null,
-    text: '<strong>Добро пожаловать в MyTennis!</strong><br>Это карточный теннис: каждый удар — розыгрыш карты и бросок кубиков. Пройдём по всем элементам экрана и сыграем первую подачу.',
-    next: 'score',
-  },
-  score: {
-    target: '#tennis-score',
-    text: 'Это счёт вашей партии. Счёт в теннисе ведётся внутри гейма по схеме 0–15–30–40–гейм; при счёте 40:40 играется «больше-меньше» до преимущества в 2 розыгрыша. Весь гейм подаёт один игрок, каждый гейм подающий чередуется. Обычный теннисный сет состоит из 6 геймов.',
-    next: 'court',
-  },
-  court: {
-    target: '#app-court-wrap',
-    text: 'Это игровое поле. На каждой стороне 3 зоны — «Слева», «Справа» и «Сетка». В момент подачи игроки стоят по диагонали, гейм начинается справа, после каждого розыгрыша стартовый угол чередуется. Ряд ударов позволяет вывести соперника из позиции — ударить туда, где его нет. А после своего удара можно перебежать в любую зону ценой сброса любой карты.',
-    next: 'turn',
-  },
-  turn: {
-    target: '#current-turn',
-    text: '«Текущий ход» показывает последнюю сыгранную карту, кому она летит, и её характеристики: Силу, Спин и особые свойства. Сложность удара в теннисе зависит от силы и вращения мяча — здесь сложность входящего удара считается как его Сила + Спин.',
-    next: 'dice',
-  },
-  dice: {
-    target: '#player1-dice',
-    text: 'Результаты последнего броска кубиков: кто бросал и что выпало. Вы успешно отбиваете мяч, если сумма 2 кубиков + 6 больше, чем сложность удара противника + Сила вашего удара − Спин вашего удара. К расчёту добавляются модификаторы карты и усталость. Кубики 1/1 — всегда ошибка, 6/6 — всегда успех.',
-    next: 'log',
-  },
-  log: {
-    target: '#app-log',
-    text: 'В журнале действий — подробная история партии: каждый удар, перемещение и прочие события. Нажмите на строку, чтобы открыть весь журнал.',
-    next: 'opponent',
-  },
-  opponent: {
-    target: '#player2',
-    text: 'Данные вашего противника: выбранная сложность ИИ, его усталость 💤, текущая позиция и её статус, количество карт в колоде 🂠, в сбросе и в руке ✋.',
-    next: 'you',
-  },
-  you: {
-    target: '#player1',
-    text: 'А в этом блоке — ваши характеристики, карты и возможные действия.',
-    next: 'fatigue',
-  },
-  fatigue: {
-    target: '#player1 .st-fat',
-    text: 'Усталость влияет на каждый ваш удар — она вычитается из результата броска кубиков. Усталость растёт, когда вы перебегаете в другую зону или добираете карту: чем дольше розыгрыш, тем сложнее. Между розыгрышами усталость сбрасывается.',
-    next: 'position',
-  },
-  position: {
-    target: '#player1 .st-pos',
-    text: 'Ваша позиция: справа, слева или у сетки. Если противник прицельно ударил туда, где вас нет, вы увидите статус «вне позиции» — тогда вместо 2 кубиков вы бросаете только 1 (и правило 1/1–6/6 не действует). Отбить такой мяч значительно сложнее.',
-    next: 'decks',
-  },
-  decks: {
-    target: '#player1 .st-deck',
-    text: 'Ваша колода и колода оппонента одинаковы. Сыгранные и сброшенные карты отправляются в сброс. Сброс возвращается в колоду, когда колода заканчивается или начинается новый гейм.',
-    next: 'draw',
-  },
-  draw: {
-    target: '#player1 .draw-btn',
-    text: 'Эта кнопка добирает карту. Максимум карт в руке — 5. Добирать можно только перед своим ходом, каждая добранная карта даёт +1 усталости.',
-    next: 'serves',
-  },
-  serves: {
-    target: '#player1 .hand',
-    text: 'В начале розыгрыша вам всегда даются 2 попытки подачи. В настоящем теннисе первой обычно подают самую сильную: на ней можно рискнуть — если ошибётесь, останется вторая. Ошибка на обеих подачах — проигранное очко.',
-    next: 'cardinfo',
-  },
-  cardinfo: {
-    target: '#player1 .hand',
-    text: 'Нажмите на любую карту, чтобы подробнее почитать про её свойства и механики.',
-    waitFor: 'cardsheet-close',
-    hint: '👆 Нажмите на карту',
-  },
-  discard: {
-    target: '#player1 .hand',
-    text: 'Кстати: во время розыгрыша (не на подаче) можно отметить галочкой одну карту в руке — она сбросится вместе с вашим ударом и даст бонус по цвету: 🔴 +2 Силы, 🔵 +1 Спин, 🟢 бесплатный добор.',
-    next: 'play',
-  },
-  play: {
-    target: '#player1 .hand',
-    text: 'Пора подавать! Нажмите «▶ Играть» на карте подачи.',
-    waitFor: 'played',
-    hint: '👆 Нажмите «▶ Играть»',
-  },
-  serve2: {
-    target: '#player1 .hand',
-    text: 'Ошибка подачи! Ничего страшного — есть вторая попытка. Сыграйте вторую подачу.',
-    waitFor: 'played',
-    hint: '👆 Сыграйте вторую подачу',
-    numAs: 'play',
-  },
-  fault2: {
-    target: '#player1',
-    text: 'Двойная ошибка — очко сопернику, так бывает! Нажмите «🎾 Новый розыгрыш» и подайте снова.',
-    waitFor: 'played',
-    hint: '👆 «Новый розыгрыш», затем подача',
-    numAs: 'play',
-  },
-  reposition: {
-    target: '#player1',
-    text: 'Отличная подача! Теперь вы можете перебежать в другую зону (кнопки на картах — это сброс карты, +1 усталости) или сразу передать ход противнику кнопкой «✓ Передать ход».',
-    waitFor: 'reposition',
-    hint: '👆 Перебегите или передайте ход',
-  },
-  final: {
-    target: null,
-    text: '<strong>Обучение завершено!</strong><br>Дальше игра идёт по-настоящему: следите за усталостью и позицией. Когда розыгрыш закончится, нажмите «🎾 Новый розыгрыш», чтобы начать следующий. Удачи!',
-    next: null,
-    nextLabel: 'Играть!',
-  },
-};
+// ── Script ─────────────────────────────────────────────────────────────────
+// Roll notation: { dice: [...], d3: n } — exactly what rollDice() will return
+// for that shot. Sums are worked out against the real complexity formula, so
+// changing a card's stats means re-checking the roll that answers it.
 
-// Display order for the "Шаг N из M" counter (welcome/final are unnumbered)
-const TUT_ORDER = ['score', 'court', 'turn', 'dice', 'log', 'opponent', 'you',
-  'fatigue', 'position', 'decks', 'draw', 'serves', 'cardinfo', 'discard',
-  'play', 'reposition'];
+const TUT_SCRIPT = [
 
-let tutActive = false;
-let tutCurrent = null;
-let tutEls = null;
+  // ═══ Розыгрыш 1 — подача проходит, соперник ошибается ═══════════════════
+  { kind: 'deal',
+    p0: ['FlatServe', 'KickServe', 'StrongForehand', 'WeakForehand', 'Slice'],
+    p1: ['StrongForehand', 'WeakForehand', 'Slice', 'WeakCrossCourt', 'SliceCrossCourt'] },
 
+  { kind: 'text', numbered: false, shade: 'strong',
+    text: '<strong>Добро пожаловать в MyTennis!</strong><br>Это карточный теннис: каждый удар — сыгранная карта и бросок кубиков. Сейчас вы сами разыграете три очка, а я буду объяснять механику по ходу дела.',
+    nextLabel: 'Начать' },
+
+  { kind: 'play', card: 'FlatServe', roll: { dice: [3, 3] },
+    text: 'Ваша подача. Нажмите «▶ Играть» на карте <strong>Плоская подача</strong> — попадёте вы или нет, решит бросок кубиков.',
+    hint: '👆 «▶ Играть» на плоской подаче' },
+
+  { kind: 'text', target: '#app-turn-section',
+    text: 'Подача прошла. Сложность вашей карты — это её <strong>Сила − Спин</strong>: 11 − 0 = <strong>11</strong>. Бросок кубиков считается как 6 + 3 + 3 = <strong>12</strong>. 12 ≥ 11 — мяч в корте.' },
+
+  { kind: 'ai', card: 'StrongForehand', roll: { dice: [2, 3] } },
+
+  { kind: 'text', target: '#app-turn-section',
+    text: 'Соперник ошибся и проиграл розыгрыш. Для него сложность сложилась из его собственной карты (Сила − Спин: 6 − 2 = <strong>4</strong>) и вашей подачи (Сила + Спин: 11 + 0 = <strong>11</strong>) — итого <strong>15</strong>. Его бросок: 6 + 2 + 3 = <strong>11</strong>. 11 < 15 — мимо.' },
+
+  { kind: 'text', target: '#tennis-score',
+    text: '<strong>Счёт 15 : 0.</strong> Счёт ведётся по теннисным правилам: 0 – 15 – 30 – 40 – гейм. При 40 : 40 играется «больше-меньше» — до преимущества в два розыгрыша.',
+    nextLabel: 'Следующий розыгрыш ›' },
+
+  // ═══ Розыгрыш 2 — вторая подача, вне позиции ════════════════════════════
+  { kind: 'newpoint' },
+  { kind: 'deal',
+    p0: ['FlatServe', 'KickServe', 'WeakCrossCourt', 'Slice', 'WeakForehand'],
+    p1: ['SliceDownTheLine', 'StrikeDownTheLine', 'WeakForehand', 'Slice', 'Moonball'] },
+
+  { kind: 'play', card: 'FlatServe', roll: { dice: [2, 2] },
+    text: 'Подавайте снова. Первой подачей выгодно рискнуть и выбрать самую сильную: в запасе всегда есть вторая попытка.',
+    hint: '👆 «▶ Играть» на плоской подаче' },
+
+  { kind: 'text', target: '#app-turn-section',
+    text: 'Не хватило: бросок 6 + 2 + 2 = <strong>10</strong> против сложности <strong>11</strong>. Это ошибка первой подачи — их в теннисе даётся две. Ошибка на обеих означала бы потерянное очко.' },
+
+  { kind: 'play', card: 'KickServe', roll: { dice: [4, 2] },
+    text: 'Вторую подачу берут надёжную. У <strong>Крученой подачи</strong> сложность всего 7 − 2 = <strong>5</strong>: слабее для соперника, зато почти наверняка в корте.',
+    hint: '👆 «▶ Играть» на крученой подаче' },
+
+  { kind: 'ai', card: 'SliceDownTheLine', roll: { dice: [4, 3], d3: 1 } },
+
+  { kind: 'text', target: '#player1 .st-pos',
+    text: 'Соперник ответил <strong>по линии</strong> — мяч ушёл в тот угол, где вас нет. Вы <strong>вне позиции</strong>: на следующий удар у вас не два кубика, а один. Отбить такой мяч заметно сложнее.' },
+
+  { kind: 'play', card: 'WeakCrossCourt', roll: { dice: [5] },
+    text: 'Выберите надёжную карту — <strong>Удар по диагонали</strong> (4 / 2). Вы добежите до мяча и ударите уже из другого угла.',
+    hint: '👆 «▶ Играть» на ударе по диагонали' },
+
+  { kind: 'text', target: '#app-court-wrap',
+    text: 'Достали: бросок 6 + 5 − 1 усталости = <strong>10</strong> против сложности <strong>7</strong>. Теперь вне позиции соперник — диагональ увела мяч от него. А вот неприцельные удары, без пометки «по линии» или «по диагонали», соперник всегда отбивает в позиции.' },
+
+  { kind: 'ai', card: 'StrikeDownTheLine', roll: { dice: [3], d3: 2 } },
+
+  { kind: 'text', target: '#player1 .st-fat',
+    text: 'Соперник не дотянулся — <strong>счёт 30 : 0</strong>. Заодно посмотрите на усталость: каждый бег вне позиции и каждый добор карты стоят +1, и эта единица вычитается из вашего броска. Между розыгрышами усталость обнуляется.',
+    nextLabel: 'Следующий розыгрыш ›' },
+
+  // ═══ Розыгрыш 3 — выход к сетке, удар слёта, свеча и смэш ═══════════════
+  { kind: 'newpoint' },
+  { kind: 'deal',
+    p0: ['FlatServe', 'KickServe', 'VolleyStrike', 'Smash', 'Slice'],
+    p1: ['WeakCrossCourt', 'Lob', 'StrongForehand', 'Slice', 'WeakForehand'] },
+
+  { kind: 'play', card: 'FlatServe', roll: { dice: [5, 4] },
+    text: 'Снова ваша подача — бейте плоскую.',
+    hint: '👆 «▶ Играть» на плоской подаче' },
+
+  { kind: 'move', card: 'KickServe', to: 'Net',
+    text: 'После своего удара можно перебежать в любую зону, сбросив за это одну карту (+1 усталости). Сбросьте ненужную теперь <strong>Крученую подачу</strong> и выйдите <strong>к сетке</strong>.',
+    hint: '👆 «→ Сетка» на крученой подаче' },
+
+  { kind: 'ai', card: 'WeakCrossCourt', roll: { dice: [5, 4] } },
+
+  { kind: 'text', target: '#app-court-wrap',
+    text: 'Соперник отбил по диагонали, но вы у сетки — а <strong>обычные удары не выбивают из позиции того, кто стоит у сетки</strong>. Пользуйтесь этим и атакуйте.' },
+
+  { kind: 'play', card: 'VolleyStrike', roll: { dice: [4, 4] },
+    text: 'Сыграйте <strong>Удар слёта</strong>. У сетки играются только <strong>зелёные</strong> карты — остальные заблокированы.',
+    hint: '👆 «▶ Играть» на ударе слёта' },
+
+  { kind: 'text', target: '#app-court-wrap',
+    text: '<strong>Удар слёта</strong> всегда летит в угол, свободный от соперника: если тот не у сетки, он гарантированно окажется вне позиции.' },
+
+  { kind: 'ai', card: 'Lob', roll: { dice: [6] } },
+
+  { kind: 'text', target: '#app-court-wrap',
+    text: 'Соперник достал <strong>Свечку</strong> — это ответ против игрока у сетки: мяч перебрасывает вас, и вы отбегаете назад вне позиции. Но на любую свечу и полусвечку можно ответить <strong>смэшем</strong> — он у вас как раз есть.' },
+
+  { kind: 'play', card: 'Smash', roll: { dice: [6] }, powerDie: 5,
+    text: 'Отвечайте <strong>Смэшем</strong>.',
+    hint: '👆 «▶ Играть» на смэше' },
+
+  { kind: 'text', target: '#app-turn-section',
+    text: 'Смэш — сильный удар из-за головы. После попадания бросается <strong>красный кубик</strong>, и его значение (здесь <strong>+5</strong>) добавляется к сложности ответного удара соперника.' },
+
+  { kind: 'ai', card: 'StrongForehand', roll: { dice: [3, 4] } },
+
+  { kind: 'text', target: '#tennis-score',
+    text: '<strong>Счёт 40 : 0</strong> — до гейма остался один розыгрыш. Разыграем его вместе.',
+    nextLabel: 'Следующий розыгрыш ›' },
+
+  // ═══ Розыгрыш 4 — укороченный против выхода к сетке, гейм ════════════════
+  { kind: 'newpoint' },
+  { kind: 'deal',
+    p0: ['FlatServe', 'KickServe', 'ApproachDropShot', 'WeakForehand', 'Slice'],
+    p1: ['Dropshot', 'StrikeCrossCourt', 'Slice', 'WeakForehand', 'WeakCrossCourt'] },
+
+  { kind: 'play', card: 'FlatServe', roll: { dice: [4, 4] },
+    text: 'Снова подавайте плоскую.',
+    hint: '👆 «▶ Играть» на плоской подаче' },
+
+  { kind: 'ai', card: 'Dropshot', roll: { dice: [6, 4], d3: 1 } },
+
+  { kind: 'text', target: '#player1 .st-pos',
+    text: 'Соперник сыграл <strong>укороченный</strong>. Такой мяч всегда вытаскивает соперника к сетке: вы <strong>вне позиции</strong> и били бы одним кубиком. Но в руке есть <strong>Выход к сетке с укороченным</strong> — удары с выходом к сетке снимают этот штраф.' },
+
+  { kind: 'play', card: 'ApproachDropShot', roll: { dice: [4, 3], d3: 2 },
+    text: 'Сыграйте <strong>Выход к сетке с укороченным</strong>: вы добегаете и бьёте <strong>в позиции</strong>, двумя кубиками, — и сами занимаете сетку.',
+    hint: '👆 «▶ Играть» на выходе к сетке с укороченным' },
+
+  { kind: 'text', target: '#app-court-wrap',
+    text: 'Вы у сетки и в позиции, а ваш укороченный отправил соперника через весь корт — теперь <strong>вне позиции</strong> он, и кубик у него один.' },
+
+  { kind: 'ai', card: 'StrikeCrossCourt', roll: { dice: [2] } },
+
+  { kind: 'end', numbered: false, shade: 'strong',
+    text: '<strong>Гейм ваш — 1 : 0.</strong> Соперник не добежал: бросок 6 + 2 − 1 усталости = <strong>7</strong> против сложности <strong>8</strong>.<br>Дальше всё по-настоящему: карты и кубики снова случайные, а подавать будет соперник. После каждого очка жмите «🎾 Новый розыгрыш». Удачи!',
+    nextLabel: 'Играть!' },
+];
+
+// Beats that get a "Шаг N из M" counter
+const TUT_NUMBERED = TUT_SCRIPT
+  .map((b, i) => ({ b, i }))
+  .filter(({ b }) => b.numbered !== false && ['text', 'play', 'move'].includes(b.kind))
+  .map(({ i }) => i);
+
+// ── State ──────────────────────────────────────────────────────────────────
+let tutActive  = false;
+let tutIndex   = -1;
+let tutEls     = null;
+let tutTimers  = [];
+
+// One-shot forced rolls, consumed by the hooks in shot-resolution.js
+let tutPendingRoll     = null;
+let tutPendingPowerDie = null;
+
+window.__scriptedRoll     = () => { const r = tutPendingRoll;     tutPendingRoll = null;     return r; };
+window.__scriptedPowerDie = () => { const d = tutPendingPowerDie; tutPendingPowerDie = null; return d; };
+
+function tutBeat() { return TUT_SCRIPT[tutIndex] || null; }
+
+function tutLater(fn, ms) {
+  const h = setTimeout(() => { tutTimers = tutTimers.filter(t => t !== h); if (tutActive) fn(); }, ms);
+  tutTimers.push(h);
+  return h;
+}
+function tutClearTimers() { tutTimers.forEach(clearTimeout); tutTimers = []; }
+
+// ── Hand stacking ──────────────────────────────────────────────────────────
+// startNewPoint() has already dealt a random hand by the time we get here, so
+// pool every card the player owns back together and pick out exactly the ones
+// this rally needs. Cards are MOVED, never cloned — cloning inflates the deck
+// (three deals added 15 phantom cards, six of them serves, and startNewPoint
+// hands the server every serve it can find: an 8-card hand of nothing but
+// serves once the walkthrough was over).
+function tutDeal(playerIndex, keys) {
+  const p = players[playerIndex];
+  const pool = [...p.hand, ...p.deck, ...p.discard, ...p.temporaryRemovedServes];
+  p.hand = []; p.deck = []; p.discard = []; p.temporaryRemovedServes = [];
+
+  for (const k of keys) {
+    const name = CARD_LIBRARY[k].name;
+    const i = pool.findIndex(c => c.name === name);
+    // The deck holds 3 of every card, so the fallback clone is unreachable in
+    // practice — it just keeps a hand from ever coming up short.
+    p.hand.push(i !== -1 ? pool.splice(i, 1)[0] : CARD_LIBRARY[k].clone());
+  }
+  p.deck = shuffle(pool);
+}
+
+/** Index in the human's hand of the card this beat is about (-1 if gone). */
+function tutHandIndex(key) {
+  const name = CARD_LIBRARY[key] && CARD_LIBRARY[key].name;
+  return name ? players[0].hand.findIndex(c => c.name === name) : -1;
+}
+
+// ── Overlay DOM ────────────────────────────────────────────────────────────
 function tutEnsureDom() {
   if (tutEls) return;
   const mk = cls => {
@@ -155,20 +246,43 @@ function tutSetBox(el, left, top, width, height) {
   el.style.height = height + 'px';
 }
 
+function tutHideShades() {
+  tutEls.shades.forEach(s => { s.style.display = 'none'; });
+  tutEls.blocker.style.display = 'none';
+}
+
+/** The element a beat points at, or null for a centered tooltip. */
+function tutTargetEl(beat) {
+  if (!beat) return null;
+  if (beat.kind === 'play' || beat.kind === 'move') {
+    const i = tutHandIndex(beat.card);
+    if (i === -1) return null;
+    return document.querySelectorAll('#player1 .hand .card')[i] || null;
+  }
+  return beat.target ? document.querySelector(beat.target) : null;
+}
+
 function tutPosition() {
-  const step = TUT_STEPS[tutCurrent];
-  if (!tutActive || !step || !tutEls) return;
+  const beat = tutBeat();
+  if (!tutActive || !beat || !tutEls) return;
   const vw = window.innerWidth, vh = window.innerHeight;
   const { shades, blocker, ring, tip } = tutEls;
-  const el = step.target ? document.querySelector(step.target) : null;
+  const el = tutTargetEl(beat);
+  const shade = beat.shade || (beat.kind === 'ai' ? 'none' : 'soft');
+  const interactive = beat.kind === 'play' || beat.kind === 'move';
+
+  tip.style.display = 'block';
 
   if (!el) {
-    // Centered modal: one full-screen shade, no ring/blocker
-    tutSetBox(shades[0], 0, 0, vw, vh);
-    shades[1].style.display = shades[2].style.display = shades[3].style.display = 'none';
+    // Centered card: one full-screen shade (or none), no ring
+    if (shade === 'none') tutHideShades();
+    else {
+      tutSetBox(shades[0], 0, 0, vw, vh);
+      shades[0].className = 'tut-shade tut-shade-' + shade;
+      shades[1].style.display = shades[2].style.display = shades[3].style.display = 'none';
+      blocker.style.display = 'none';
+    }
     ring.style.display = 'none';
-    blocker.style.display = 'none';
-    tip.style.display = 'block';
     tip.style.left = Math.max(8, (vw - tip.offsetWidth) / 2) + 'px';
     tip.style.top = Math.max(8, (vh - tip.offsetHeight) / 2.4) + 'px';
     return;
@@ -183,19 +297,24 @@ function tutPosition() {
     bottom: Math.min(vh, rect.bottom + pad),
   };
 
-  tutSetBox(shades[0], 0, 0, vw, r.top);                              // top
-  tutSetBox(shades[1], 0, r.bottom, vw, vh - r.bottom);               // bottom
-  tutSetBox(shades[2], 0, r.top, r.left, r.bottom - r.top);           // left
-  tutSetBox(shades[3], r.right, r.top, vw - r.right, r.bottom - r.top); // right
+  if (shade === 'none') {
+    tutHideShades();
+  } else {
+    shades.forEach(s => { s.className = 'tut-shade tut-shade-' + shade; });
+    tutSetBox(shades[0], 0, 0, vw, r.top);                                // top
+    tutSetBox(shades[1], 0, r.bottom, vw, vh - r.bottom);                 // bottom
+    tutSetBox(shades[2], 0, r.top, r.left, r.bottom - r.top);             // left
+    tutSetBox(shades[3], r.right, r.top, vw - r.right, r.bottom - r.top); // right
+    // Waiting beats let taps through to the highlighted element; narration
+    // beats block the hole too, so nothing can be played out of turn.
+    if (interactive) blocker.style.display = 'none';
+    else tutSetBox(blocker, r.left, r.top, r.right - r.left, r.bottom - r.top);
+  }
+
+  ring.className = 'tut-ring ' + (interactive ? 'tut-ring-act' : 'tut-ring-info');
   tutSetBox(ring, r.left, r.top, r.right - r.left, r.bottom - r.top);
 
-  // Informational steps also block the hole itself; interactive steps let
-  // taps reach the highlighted element.
-  if (step.waitFor) blocker.style.display = 'none';
-  else tutSetBox(blocker, r.left, r.top, r.right - r.left, r.bottom - r.top);
-
-  // Tooltip below the hole when it's in the upper half, above otherwise
-  tip.style.display = 'block';
+  // Tooltip below the hole when it sits high on screen, above it otherwise
   const tipW = tip.offsetWidth, tipH = tip.offsetHeight;
   const centerX = (r.left + r.right) / 2;
   tip.style.left = Math.min(Math.max(8, centerX - tipW / 2), vw - tipW - 8) + 'px';
@@ -204,101 +323,204 @@ function tutPosition() {
     : Math.max(8, r.top - tipH - 10)) + 'px';
 }
 
-function showTutStep(id) {
-  const step = TUT_STEPS[id];
-  if (!step) { endTutorial(); return; }
+// ── Button locking ─────────────────────────────────────────────────────────
+// render() rebuilds #player1 from scratch every time, so the locks are simply
+// re-applied afterwards (see the render wrapper at the bottom of the file).
+function tutApplyLocks() {
+  const beat = tutBeat();
+  const panel = document.getElementById('player1');
+  if (!beat || !panel) return;
 
-  // Skip steps whose target element isn't on screen right now
-  if (step.target && !document.querySelector(step.target)) {
-    if (typeof step.next === 'string') { showTutStep(step.next); return; }
-    endTutorial();
-    return;
+  // Draw and "Новый розыгрыш" are driven by the script, never by the player
+  panel.querySelectorAll('.draw-btn').forEach(b => b.remove());
+  // Marking a card for active discard would change the power/spin the tooltips
+  // quote, so it stays off for the whole walkthrough
+  panel.querySelectorAll('.mark-checkbox-row').forEach(b => b.remove());
+
+  const wantPlay = beat.kind === 'play' ? tutHandIndex(beat.card) : -1;
+  const wantMove = beat.kind === 'move' ? tutHandIndex(beat.card) : -1;
+
+  panel.querySelectorAll('.hand .card').forEach((cardEl, idx) => {
+    const playBtn = cardEl.querySelector('.play-btn');
+    if (playBtn && idx !== wantPlay) {
+      playBtn.disabled = true;
+      playBtn.classList.add('play-btn-disabled');
+      playBtn.removeAttribute('onclick');
+    }
+    const move = cardEl.querySelector('.discard-move');
+    if (!move) return;
+    if (idx !== wantMove) { move.remove(); return; }
+    // Keep only the direction the script asked for
+    move.querySelectorAll('.position-btn').forEach(b => {
+      const oc = b.getAttribute('onclick') || '';
+      if (!oc.includes(`'${beat.to}'`)) b.remove();
+    });
+  });
+}
+
+// ── Beat execution ─────────────────────────────────────────────────────────
+function tutEnterBeat(i) {
+  if (!tutActive) return;
+  tutIndex = i;
+  const beat = TUT_SCRIPT[i];
+  if (!beat) { endTutorial(); return; }
+
+  switch (beat.kind) {
+
+    case 'deal':
+      tutDeal(0, beat.p0);
+      tutDeal(1, beat.p1);
+      render(players, currentPlayer, gameLog);
+      tutEnterBeat(i + 1);
+      return;
+
+    case 'newpoint':
+      if (pendingPointEnd) confirmNewPoint();
+      tutEnterBeat(i + 1);
+      return;
+
+    case 'ai':
+      // Arm the roll, then hand control back: clearing the reposition window
+      // lets aiCheckAutoTrigger schedule the opponent's turn on the usual
+      // delay, and the wrapped aiPlayTurn below plays the scripted card.
+      tutPendingRoll     = beat.roll || null;
+      tutPendingPowerDie = beat.powerDie != null ? beat.powerDie : null;
+      canDiscardForPosition = -1;
+      tutRenderTip(beat);
+      return;
+
+    case 'play':
+    case 'move':
+      tutPendingRoll     = beat.roll || null;
+      tutPendingPowerDie = beat.powerDie != null ? beat.powerDie : null;
+      // The card the beat is about must still be in hand, otherwise the script
+      // has desynced (shouldn't happen — everything else is locked).
+      if (tutHandIndex(beat.card) === -1) { tutBail(); return; }
+      tutRenderTip(beat);
+      return;
+
+    default: // 'text' | 'end'
+      tutRenderTip(beat);
+      return;
   }
+}
 
-  tutCurrent = id;
+function tutAdvance(delayMs) {
+  const from = tutIndex;
+  const go = () => { if (tutActive && tutIndex === from) tutEnterBeat(from + 1); };
+  if (delayMs) tutLater(go, delayMs); else go();
+}
+
+/** Something went off-script — skip straight to the closing card. */
+function tutBail() {
+  const last = TUT_SCRIPT.length - 1;
+  tutEnterBeat(TUT_SCRIPT[last].kind === 'end' ? last : TUT_SCRIPT.length);
+}
+
+function tutRenderTip(beat) {
   tutEnsureDom();
-  const { tip } = tutEls;
+  const tip = tutEls.tip;
 
-  const numIdx = TUT_ORDER.indexOf(step.numAs || id);
-  const numHtml = numIdx > -1 ? `Шаг ${numIdx + 1} из ${TUT_ORDER.length}` : 'Обучение';
-  const actionHtml = step.waitFor
-    ? `<span class="tut-hint">${step.hint || ''}</span>`
-    : `<button class="tut-next">${step.nextLabel || 'Далее ›'}</button>`;
+  const numIdx = TUT_NUMBERED.indexOf(tutIndex);
+  const numHtml = numIdx > -1
+    ? `Шаг ${numIdx + 1} из ${TUT_NUMBERED.length}`
+    : 'Обучение';
+
+  let actionHtml;
+  if (beat.kind === 'ai')
+    actionHtml = '<span class="tut-hint tut-hint-wait">🎾 Отвечает соперник…</span>';
+  else if (beat.kind === 'text' || beat.kind === 'end')
+    actionHtml = `<button class="tut-next">${beat.nextLabel || 'Далее ›'}</button>`;
+  else
+    actionHtml = `<span class="tut-hint">${beat.hint || ''}</span>`;
+
   tip.innerHTML = `
     <div class="tut-step-num">${numHtml}</div>
-    <div class="tut-text">${step.text}</div>
+    <div class="tut-text">${beat.kind === 'ai' ? 'Ход соперника.' : beat.text}</div>
     <div class="tut-actions">
       <button class="tut-skip">Пропустить</button>
       ${actionHtml}
     </div>`;
   tip.querySelector('.tut-skip').onclick = endTutorial;
   const nextBtn = tip.querySelector('.tut-next');
-  if (nextBtn) {
-    nextBtn.onclick = () => {
-      if (typeof step.next === 'string') showTutStep(step.next);
-      else endTutorial();
-    };
-  }
+  if (nextBtn) nextBtn.onclick = () => tutAdvance(0);
 
-  const el = step.target ? document.querySelector(step.target) : null;
-  if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'auto' });
-  // Position after scroll/layout settles (setTimeout, not rAF — rAF stalls
-  // in backgrounded tabs and the tooltip would never appear)
-  setTimeout(tutPosition, 80);
+  // Re-render so the locks match this beat, then place the spotlight. The card
+  // the player must tap may be scrolled out of the horizontal hand strip.
+  render(players, currentPlayer, gameLog);
+  const el = tutTargetEl(beat);
+  if (el && el.closest('.hand') && el.scrollIntoView)
+    el.scrollIntoView({ inline: 'center', block: 'nearest' });
+  // setTimeout, not rAF — rAF stalls in backgrounded tabs and the tooltip
+  // would never appear.
+  tutLater(tutPosition, 60);
 }
 
+// ── Lifecycle ──────────────────────────────────────────────────────────────
 function startTutorial() {
   tutEnsureDom();
+  tutClearTimers();
   tutActive = true;
+  tutPendingRoll = null;
+  tutPendingPowerDie = null;
   document.body.classList.add('tutorial-active');  // re-show in-layout buttons under TG
   startGame();               // fresh match — the human serves the first point
   window.addEventListener('resize', tutPosition);
-  showTutStep('welcome');
+  tutEnterBeat(0);
 }
 
 function endTutorial() {
   tutActive = false;
-  tutCurrent = null;
+  tutIndex = -1;
+  tutClearTimers();
+  tutPendingRoll = null;
+  tutPendingPowerDie = null;
   document.body.classList.remove('tutorial-active');
-  // Completing OR skipping the tutorial both land here — unlock "Играть".
-  if (typeof markTutorialSeen === 'function') markTutorialSeen();
-  // Refresh so the MainButton picks the right action back up after the tutorial.
-  if (typeof updateMainButton === 'function') updateMainButton();
   window.removeEventListener('resize', tutPosition);
-  if (!tutEls) return;
-  [...tutEls.shades, tutEls.blocker, tutEls.ring, tutEls.tip]
-    .forEach(el => { el.style.display = 'none'; });
+  if (tutEls) {
+    [...tutEls.shades, tutEls.blocker, tutEls.ring, tutEls.tip]
+      .forEach(el => { el.style.display = 'none'; });
+  }
+  // Completing OR skipping both land here — unlock "Играть".
+  if (typeof markTutorialSeen === 'function') markTutorialSeen();
+  // Rebuild the panel without the tutorial's locks and let the real AI take over.
+  if (typeof render === 'function') render(players, currentPlayer, gameLog);
+  if (typeof updateMainButton === 'function') updateMainButton();
 }
 
 // ── Advancement on real game actions ───────────────────────────────────────
-
-// After the player's card resolves, pick the branch that matches the outcome.
-function tutAfterPlay() {
-  if (!tutActive) return;
-  // Nothing changed → the play was rejected (blocked card etc.), stay put
-  if (incomingPower === 0 && serveAttempt === 1 && !pendingPointEnd) { tutPosition(); return; }
-  if (pendingPointEnd) { showTutStep('fault2'); return; }                       // double fault
-  if (serveAttempt === 2 && incomingPower === 0) { showTutStep('serve2'); return; } // first-serve fault
-  if (canDiscardForPosition === 0) { showTutStep('reposition'); return; }       // serve landed
-  showTutStep('final');
-}
-
 window.__tutorialNotify = function (note, playerIndex) {
   if (!tutActive) return;
-  if (note === 'played' && playerIndex === 0 &&
-      ['cardinfo', 'discard', 'play', 'serve2', 'fault2'].includes(tutCurrent)) {
-    // "played" may arrive from the cardinfo/discard steps too — the hand is
-    // tappable there and the play buttons are live.
-    setTimeout(tutAfterPlay, 450);
+  const beat = tutBeat();
+  if (!beat) return;
+
+  if (note === 'played' && playerIndex === 0 && beat.kind === 'play') {
+    tutAdvance(1000);   // let the dice and the trajectory land first
     return;
   }
-  if (note === 'reposition' && tutCurrent === 'reposition') { showTutStep('final'); return; }
-  if (note === 'cardsheet-close' && tutCurrent === 'cardinfo') { showTutStep('discard'); return; }
+  if (note === 'played' && playerIndex === 1 && beat.kind === 'ai') {
+    tutAdvance(1200);
+    return;
+  }
+  if (note === 'reposition' && playerIndex === 0 && beat.kind === 'move') {
+    tutAdvance(500);
+    return;
+  }
 };
 
-// Wrap the game actions the tutorial listens for. Function declarations are
-// reassignable globals, and inline onclick handlers resolve them at call time.
+// Wrap the game functions the tutorial drives or listens for. Function
+// declarations are reassignable globals, and the inline onclick handlers in
+// render.js resolve them at call time, so the wrappers apply everywhere.
 (function tutHookGameActions() {
+
+  if (typeof render === 'function') {
+    const orig = render;
+    render = function (...args) {
+      orig(...args);
+      if (tutActive) tutApplyLocks();
+    };
+  }
+
   if (typeof playCard === 'function') {
     const orig = playCard;
     playCard = function (playerIndex, cardIndex) {
@@ -306,18 +528,27 @@ window.__tutorialNotify = function (note, playerIndex) {
       if (window.__tutorialNotify) window.__tutorialNotify('played', playerIndex);
     };
   }
-  if (typeof aiPassTurn === 'function') {
-    const orig = aiPassTurn;
-    aiPassTurn = function (playerIndex) {
-      orig(playerIndex);
-      if (window.__tutorialNotify) window.__tutorialNotify('reposition', playerIndex);
-    };
-  }
+
   if (typeof discardForPosition === 'function') {
     const orig = discardForPosition;
     discardForPosition = function (playerIndex, cardIndex, newPosition) {
       orig(playerIndex, cardIndex, newPosition);
       if (window.__tutorialNotify) window.__tutorialNotify('reposition', playerIndex);
+    };
+  }
+
+  // The opponent is scripted during the tutorial: the normal scheduler still
+  // provides the delay, but the engine's own decision is bypassed.
+  if (typeof aiPlayTurn === 'function') {
+    const orig = aiPlayTurn;
+    aiPlayTurn = function (playerIndex) {
+      if (!tutActive) { orig(playerIndex); return; }
+      const beat = tutBeat();
+      if (playerIndex !== 1 || !beat || beat.kind !== 'ai') return;  // not this beat's turn
+      const name = CARD_LIBRARY[beat.card] && CARD_LIBRARY[beat.card].name;
+      const idx  = players[1].hand.findIndex(c => c.name === name);
+      if (idx === -1) { tutBail(); return; }
+      playCard(1, idx);
     };
   }
 })();

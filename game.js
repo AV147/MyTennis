@@ -528,7 +528,7 @@ function playCard(playerIndex, cardIndex) {
 
     // Pre-roll powershot bonus BEFORE display so the red die shows immediately
     if (card.powershot) {
-      pendingPowershotBonus = Math.floor(Math.random() * 6) + 1;
+      pendingPowershotBonus = rollPowerDie();
     }
 
     displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, pendingPowershotBonus, true);
