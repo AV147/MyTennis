@@ -1,7 +1,8 @@
 // ===== SCRIPTED TUTORIAL (index.html only) =================================
-// Three points played on the real board, start to finish. Nothing is faked:
+// Four points played on the real board, start to finish. Nothing is faked:
 // the player presses the real buttons, game.js resolves the shots and the
-// score really goes 15:0 → 30:0 → 40:0. What IS scripted is the randomness —
+// score really runs 15:0 → 30:0 → 40:0 → game. What IS scripted is the
+// randomness —
 // hands are dealt from a fixed list, every die is forced, and the opponent
 // plays a predetermined card each turn — so the numbers quoted in a tooltip
 // always match what's on screen.
@@ -44,7 +45,7 @@ const TUT_SCRIPT = [
     hint: '👆 «▶ Играть» на плоской подаче' },
 
   { kind: 'text', target: '#app-turn-section',
-    text: 'Подача прошла. Сложность вашей карты — это её <strong>Сила − Спин</strong>: 10 − 0 = <strong>10</strong>. Бросок кубиков считается как 6 + 3 + 3 = <strong>12</strong>. 12 ≥ 10 — мяч в корте.' },
+    text: 'Подача прошла. Сложность вашей карты — это её <strong>Сила − Спин</strong>: 10 − 0 = 10, плюс 1 за метку <strong>Прицельный</strong> — итого <strong>11</strong>. Бросок кубиков считается как 6 + 3 + 3 = <strong>12</strong>. 12 ≥ 11 — мяч в корте.' },
 
   { kind: 'ai', card: 'StrongForehand', roll: { dice: [2, 3] } },
 
@@ -66,10 +67,10 @@ const TUT_SCRIPT = [
     hint: '👆 «▶ Играть» на плоской подаче' },
 
   { kind: 'text', target: '#app-turn-section',
-    text: 'Не хватило: бросок 6 + 1 + 2 = <strong>9</strong> против сложности <strong>10</strong>. Это ошибка первой подачи — их в теннисе даётся две. Ошибка на обеих означала бы потерянное очко.' },
+    text: 'Не хватило: бросок 6 + 1 + 2 = <strong>9</strong> против сложности <strong>11</strong>. Это ошибка первой подачи — их в теннисе даётся две. Ошибка на обеих означала бы потерянное очко.' },
 
   { kind: 'play', card: 'KickServe', roll: { dice: [4, 2] },
-    text: 'Вторую подачу берут надёжную. У <strong>Крученой подачи</strong> сложность всего 7 − 2 = <strong>5</strong>: слабее для соперника, зато почти наверняка в корте.',
+    text: 'Вторую подачу берут надёжную. У <strong>Крученой подачи</strong> сложность всего 7 − 2 + 1 = <strong>6</strong>: слабее для соперника, зато почти наверняка в корте.',
     hint: '👆 «▶ Играть» на крученой подаче' },
 
   { kind: 'ai', card: 'SliceDownTheLine', roll: { dice: [4, 3], d3: 1 } },
