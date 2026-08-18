@@ -36,7 +36,7 @@ const TUT_SCRIPT = [
     p1: ['StrongForehand', 'WeakForehand', 'Slice', 'WeakCrossCourt', 'SliceCrossCourt'] },
 
   { kind: 'text', numbered: false, shade: 'strong',
-    text: '<strong>Добро пожаловать в MyTennis!</strong><br>Это карточный теннис: каждый удар — сыгранная карта и бросок кубиков. Сейчас вы сами разыграете три очка, а я буду объяснять механику по ходу дела.',
+    text: '<strong>Добро пожаловать в MyTennis!</strong><br>Это карточный теннис: каждый удар — сыгранная карта и бросок кубиков. Сейчас вы сами разыграете четыре очка и выиграете гейм, а я буду объяснять механику по ходу дела.',
     nextLabel: 'Начать' },
 
   { kind: 'play', card: 'FlatServe', roll: { dice: [3, 3] },
@@ -44,12 +44,12 @@ const TUT_SCRIPT = [
     hint: '👆 «▶ Играть» на плоской подаче' },
 
   { kind: 'text', target: '#app-turn-section',
-    text: 'Подача прошла. Сложность вашей карты — это её <strong>Сила − Спин</strong>: 11 − 0 = <strong>11</strong>. Бросок кубиков считается как 6 + 3 + 3 = <strong>12</strong>. 12 ≥ 11 — мяч в корте.' },
+    text: 'Подача прошла. Сложность вашей карты — это её <strong>Сила − Спин</strong>: 10 − 0 = <strong>10</strong>. Бросок кубиков считается как 6 + 3 + 3 = <strong>12</strong>. 12 ≥ 10 — мяч в корте.' },
 
   { kind: 'ai', card: 'StrongForehand', roll: { dice: [2, 3] } },
 
   { kind: 'text', target: '#app-turn-section',
-    text: 'Соперник ошибся и проиграл розыгрыш. Для него сложность сложилась из его собственной карты (Сила − Спин: 6 − 2 = <strong>4</strong>) и вашей подачи (Сила + Спин: 11 + 0 = <strong>11</strong>) — итого <strong>15</strong>. Его бросок: 6 + 2 + 3 = <strong>11</strong>. 11 < 15 — мимо.' },
+    text: 'Соперник ошибся и проиграл розыгрыш. Для него сложность сложилась из его собственной карты (Сила − Спин: 6 − 2 = <strong>4</strong>) и вашей подачи (Сила + Спин: 10 + 0 = <strong>10</strong>) — итого <strong>14</strong>. Его бросок: 6 + 2 + 3 = <strong>11</strong>. 11 < 14 — мимо.' },
 
   { kind: 'text', target: '#tennis-score',
     text: '<strong>Счёт 15 : 0.</strong> Счёт ведётся по теннисным правилам: 0 – 15 – 30 – 40 – гейм. При 40 : 40 играется «больше-меньше» — до преимущества в два розыгрыша.',
@@ -61,12 +61,12 @@ const TUT_SCRIPT = [
     p0: ['FlatServe', 'KickServe', 'WeakCrossCourt', 'Slice', 'WeakForehand'],
     p1: ['SliceDownTheLine', 'StrikeDownTheLine', 'WeakForehand', 'Slice', 'Moonball'] },
 
-  { kind: 'play', card: 'FlatServe', roll: { dice: [2, 2] },
+  { kind: 'play', card: 'FlatServe', roll: { dice: [1, 2] },
     text: 'Подавайте снова. Первой подачей выгодно рискнуть и выбрать самую сильную: в запасе всегда есть вторая попытка.',
     hint: '👆 «▶ Играть» на плоской подаче' },
 
   { kind: 'text', target: '#app-turn-section',
-    text: 'Не хватило: бросок 6 + 2 + 2 = <strong>10</strong> против сложности <strong>11</strong>. Это ошибка первой подачи — их в теннисе даётся две. Ошибка на обеих означала бы потерянное очко.' },
+    text: 'Не хватило: бросок 6 + 1 + 2 = <strong>9</strong> против сложности <strong>10</strong>. Это ошибка первой подачи — их в теннисе даётся две. Ошибка на обеих означала бы потерянное очко.' },
 
   { kind: 'play', card: 'KickServe', roll: { dice: [4, 2] },
     text: 'Вторую подачу берут надёжную. У <strong>Крученой подачи</strong> сложность всего 7 − 2 = <strong>5</strong>: слабее для соперника, зато почти наверняка в корте.',
@@ -158,8 +158,13 @@ const TUT_SCRIPT = [
 
   { kind: 'ai', card: 'StrikeCrossCourt', roll: { dice: [2] } },
 
+  // The closing card is centred and covers the board, so the numbers it used to
+  // quote get their own beat first, with the dice still in the spotlight.
+  { kind: 'text', target: '#app-turn-section',
+    text: 'Соперник не добежал: его бросок 6 + 2 − 1 усталости = <strong>7</strong> против сложности <strong>8</strong>. <strong>Гейм ваш — 1 : 0!</strong>' },
+
   { kind: 'end', numbered: false, shade: 'strong',
-    text: '<strong>Гейм ваш — 1 : 0.</strong> Соперник не добежал: бросок 6 + 2 − 1 усталости = <strong>7</strong> против сложности <strong>8</strong>.<br>Дальше всё по-настоящему: карты и кубики снова случайные, а подавать будет соперник. После каждого очка жмите «🎾 Новый розыгрыш». Удачи!',
+    text: '<strong>Обучение пройдено.</strong><br>Дальше всё по-настоящему: карты и кубики снова случайные, а подавать будет соперник. После каждого очка жмите «🎾 Новый розыгрыш». Удачи!',
     nextLabel: 'Играть!' },
 ];
 
@@ -194,6 +199,7 @@ let tutTimers  = [];
 let tutOrigDrawShotLine = null;
 let tutPendingShot      = null;
 let tutPendingShotBeat  = -1;
+let tutShotLandsAt      = 0;   // timestamp the ball touches down
 
 // One-shot forced rolls, consumed by the hooks in shot-resolution.js
 let tutPendingRoll     = null;
@@ -211,6 +217,23 @@ function tutLater(fn, ms) {
 }
 function tutClearTimers() { tutTimers.forEach(clearTimeout); tutTimers = []; }
 
+/** How long the held shot will be in the air once released (0 if none). */
+function tutShotFlightMs() {
+  if (!tutPendingShot || typeof ballDuration !== 'function') return 0;
+  return ballDuration(tutPendingShot[4]);   // 5th arg of drawShotLine is power
+}
+
+/**
+ * When the court will be quiet again — the moment the current ball lands,
+ * whether it is still held or already flying. Ball speed scales with power,
+ * so this ranges from half a second to four.
+ */
+function tutBallClearAt() {
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  if (tutPendingShot) return now + TUT_RING_SETTLE_MS + tutShotFlightMs();
+  return tutShotLandsAt;
+}
+
 /**
  * Release the trajectory game.js wanted to draw when the card resolved.
  * Only fires once the script has moved past the beat that produced the shot,
@@ -223,6 +246,8 @@ function tutFlushShot(force) {
   tutPendingShot = null;
   tutPendingShotBeat = -1;
   tutOrigDrawShotLine(...args);
+  tutShotLandsAt = (typeof performance !== 'undefined' ? performance.now() : Date.now())
+                 + (typeof ballDuration === 'function' ? ballDuration(args[4]) : 0);
 }
 
 // ── Hand stacking ──────────────────────────────────────────────────────────
@@ -331,6 +356,24 @@ function tutPosition() {
     bottom: Math.min(vh, rect.bottom + pad),
   };
 
+  // Narration beats quote what just happened — "соперник ошибся", "12 ≥ 10" —
+  // so the played card and the dice have to stay lit and uncovered. Widen the
+  // hole to take in the turn section as well; the tooltip then goes below the
+  // whole thing, over the hand, which is the one area nothing is said about.
+  // Instruction beats (play/move) point at a card down in the hand, so they
+  // keep the tight spotlight.
+  const keepTurn = beat.keepTurn !== false && (beat.kind === 'text' || beat.kind === 'end');
+  const turnEl = keepTurn ? document.querySelector('#app-turn-section') : null;
+  if (turnEl) {
+    const t = turnEl.getBoundingClientRect();
+    if (t.width && t.height) {
+      r.left   = Math.max(0,  Math.min(r.left,   t.left - pad));
+      r.top    = Math.max(0,  Math.min(r.top,    t.top - pad));
+      r.right  = Math.min(vw, Math.max(r.right,  t.right + pad));
+      r.bottom = Math.min(vh, Math.max(r.bottom, t.bottom + pad));
+    }
+  }
+
   if (shade === 'none') {
     tutHideShades();
   } else {
@@ -348,13 +391,17 @@ function tutPosition() {
   ring.className = 'tut-ring ' + (interactive ? 'tut-ring-act' : 'tut-ring-info');
   tutSetBox(ring, r.left, r.top, r.right - r.left, r.bottom - r.top);
 
-  // Tooltip below the hole when it sits high on screen, above it otherwise
+  // Tooltip goes below the hole whenever it fits, above it otherwise — never
+  // on top of it. The old "is the hole in the upper half" test broke down once
+  // the hole grew to include the turn section.
   const tipW = tip.offsetWidth, tipH = tip.offsetHeight;
   const centerX = (r.left + r.right) / 2;
   tip.style.left = Math.min(Math.max(8, centerX - tipW / 2), vw - tipW - 8) + 'px';
-  tip.style.top = (r.bottom < vh * 0.55
-    ? Math.min(r.bottom + 10, vh - tipH - 8)
-    : Math.max(8, r.top - tipH - 10)) + 'px';
+  let top;
+  if (r.bottom + 10 + tipH <= vh - 8)      top = r.bottom + 10;   // below
+  else if (r.top - 10 - tipH >= 8)         top = r.top - tipH - 10;  // above
+  else top = Math.max(8, Math.min(r.bottom + 10, vh - tipH - 8));    // no room: clamp
+  tip.style.top = top + 'px';
 }
 
 // ── Button locking ─────────────────────────────────────────────────────────
@@ -409,20 +456,36 @@ function tutEnterBeat(i) {
       return;
 
     case 'newpoint':
-      tutPendingShot = null; tutPendingShotBeat = -1;  // confirmNewPoint wipes the board anyway
+      tutPendingShot = null; tutPendingShotBeat = -1; tutShotLandsAt = 0;  // confirmNewPoint wipes the board anyway
       if (pendingPointEnd) confirmNewPoint();
       tutEnterBeat(i + 1);
       return;
 
-    case 'ai':
-      // Arm the roll, then hand control back: clearing the reposition window
-      // lets aiCheckAutoTrigger schedule the opponent's turn on the usual
-      // delay, and the wrapped aiPlayTurn below plays the scripted card.
+    case 'ai': {
+      // Arm the roll, show "Ход соперника", and let tutRenderTip release the
+      // trajectory. The reposition window stays open meanwhile, which is what
+      // holds aiCheckAutoTrigger back — only once the ball has actually landed
+      // do we clear it, so the opponent never answers a serve in mid-flight
+      // (a kick serve is airborne for ~2.5 s; the scheduler's own delay is 0.7).
       tutPendingRoll     = beat.roll || null;
       tutPendingPowerDie = beat.powerDie != null ? beat.powerDie : null;
-      canDiscardForPosition = -1;
+      // Hold the scheduler shut. A pending reposition window normally does that
+      // for us, but discardForPosition clears it and arms the 700 ms timer on
+      // its way out — so cancel whatever is armed and re-assert the block.
+      if (typeof aiTimeoutHandle !== 'undefined' && aiTimeoutHandle[1]) {
+        clearTimeout(aiTimeoutHandle[1]);
+        aiTimeoutHandle[1] = null;
+      }
+      canDiscardForPosition = 0;   // locks are stripped by tutApplyLocks
+      const now     = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      const clearAt = tutBallClearAt();
       tutRenderTip(beat);
+      tutLater(() => {
+        canDiscardForPosition = -1;
+        render(players, currentPlayer, gameLog);   // arms aiScheduleNext
+      }, Math.max(TUT_RING_SETTLE_MS, clearAt - now));
       return;
+    }
 
     case 'play':
     case 'move':
@@ -501,6 +564,7 @@ function startTutorial() {
   tutPendingRoll = null;
   tutPendingPowerDie = null;
   tutPendingShot = null;
+  tutShotLandsAt = 0;
   document.body.classList.add('tutorial-active');  // re-show in-layout buttons under TG
   startGame();               // fresh match — the human serves the first point
   window.addEventListener('resize', tutPosition);
