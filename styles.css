@@ -239,6 +239,7 @@ body {
 .badge-anti      { background: #7f8c8d; }
 .badge-volley    { background: #27ae60; }
 .badge-overhead  { background: #e74c3c; }
+.badge-target    { background: #b7950b; }
 
 .play-btn {
   margin-top: 5px; width: 100%; padding: 5px;

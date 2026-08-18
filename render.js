@@ -97,15 +97,16 @@ function render(players, currentPlayer, gameLog) {
         const markClass = isMarked && card.color ? `card-marked-${card.color}` : '';
 
         const badges = [
-          card.guided    && '<span class="badge badge-guided">Guided</span>',
-          card.powershot && '<span class="badge badge-power">+1d6</span>',
-          card.complex   && '<span class="badge badge-complex">Complex</span>',
-          card.dropshot  && '<span class="badge badge-drop">Drop</span>',
-          card.approach  && '<span class="badge badge-approach">Approach</span>',
-          card.smashable && '<span class="badge badge-smash">Smashable</span>',
-          card.antiNet   && '<span class="badge badge-anti">Anti-Net</span>',
-          card.volley    && '<span class="badge badge-volley">Volley</span>',
-          card.overhead  && '<span class="badge badge-overhead">Overhead</span>',
+          card.guided         && '<span class="badge badge-guided">Прицельный</span>',
+          card.powershot      && '<span class="badge badge-power">Мощный</span>',
+          card.complex        && '<span class="badge badge-complex">Сложный</span>',
+          card.dropshot       && '<span class="badge badge-drop">Укороченный</span>',
+          card.approach       && '<span class="badge badge-approach">К сетке</span>',
+          card.smashable      && '<span class="badge badge-smash">Высокий</span>',
+          card.antiNet        && '<span class="badge badge-anti">Анти-сетка</span>',
+          card.volley         && '<span class="badge badge-volley">С лёта</span>',
+          card.overhead       && '<span class="badge badge-overhead">Из-за головы</span>',
+          card.targetOpposite && '<span class="badge badge-target">В пустой угол</span>',
         ].filter(Boolean).join('');
 
         // A card marked for active discard cannot be played itself — uncheck first
@@ -214,25 +215,25 @@ function cardPropertyRows(card) {
   if (card.type === 'serve')
     add('🎾', 'Подача', 'разыгрывается только в начале розыгрыша. Даётся две попытки: ошибка на обеих — очко сопернику.');
   if (card.guided)
-    add('🎯', 'Прицельный (Guided)', card.type === 'serve'
+    add('🎯', 'Прицельный', card.type === 'serve'
       ? '+1 к вашей сложности исполнения: подавать нужно точно в зону. На сложность приёма для соперника это не влияет.'
       : '+1 к вашей сложности исполнения — удар труднее, зато летит точно по выбранному направлению.');
   if (card.complex)
-    add('🎲', 'Сложный (Complex)', 'из вашего броска дополнительно вычитается 1к3.');
+    add('🎲', 'Сложный', 'из вашего броска дополнительно вычитается 1-3.');
   if (card.powershot)
-    add('💥', 'Мощный удар (+1к6)', 'после успеха бросается красный кубик — его значение добавляется к сложности следующего удара соперника.');
+    add('💥', 'Мощный', 'после успеха бросается красный кубик — 1-6 добавляется к сложности следующего удара соперника.');
   if (card.dropshot)
-    add('🪶', 'Укороченный (Drop)', 'соперник вынужден бежать к сетке — он окажется вне позиции, если не стоял у сетки в момент удара.');
+    add('🪶', 'Укороченный', 'соперник вынужден бежать к сетке — он окажется вне позиции, если не стоял у сетки в момент удара.');
   if (card.approach)
-    add('🏃', 'Выход к сетке (Approach)', 'после успешного удара вы сразу занимаете зону Сетка.');
+    add('🏃', 'К сетке', 'после успешного удара вы сразу занимаете зону Сетка.');
   if (card.smashable)
-    add('☁️', 'Свеча (Smashable)', 'соперник может ответить на этот удар смэшем (Overhead).');
+    add('☁️', 'Высокий', 'мяч летит по высокой дуге — соперник может ответить ударом из-за головы.');
   if (card.antiNet)
-    add('🛡️', 'Анти-сетка (Anti-Net)', 'выбивает из позиции даже соперника, стоящего у сетки.');
+    add('🛡️', 'Анти-сетка', 'выбивает из позиции даже соперника, стоящего у сетки.');
   if (card.volley)
-    add('🥅', 'Слёта (Volley)', 'играется только стоя у сетки.');
+    add('🥅', 'С лёта', 'играется только стоя у сетки.');
   if (card.overhead)
-    add('🔨', 'Смэш (Overhead)', 'играется только в ответ на удар с меткой Smashable; можно играть у сетки.');
+    add('🔨', 'Из-за головы', 'играется только в ответ на удар с меткой «Высокий»; можно играть у сетки.');
   if (card.direction === 'line')
     add('↔️', 'По линии', 'соперник окажется вне позиции, если стоит в той же зоне, что и вы.');
   if (card.direction === 'cross')
@@ -240,7 +241,7 @@ function cardPropertyRows(card) {
   if (card.target)
     add('📍', `Цель: ${formatPosition(card.target)}`, 'соперник окажется вне позиции, если стоит не в этой зоне.');
   if (card.targetOpposite)
-    add('📍', 'В свободный угол', 'всегда целится туда, где соперника нет — он вне позиции, если не стоит у сетки.');
+    add('📍', 'В пустой угол', 'если соперник сзади, попадает в угол, где его нет, — и тот остаётся вне позиции.');
 
   if (card.color === 'red')
     add('🔴', 'Красная карта', 'можно сбросить вместе с другим ударом (отметьте её галочкой) — тот получит +2 к Силе.');
@@ -288,7 +289,8 @@ function renderCurrentTurnPanel() {
   }
 
   const { playerIndex, cardName, power, spin, baseDifficulty, powershotBonus, missed,
-          guided, powershot, complex, dropshot, approach, smashable, antiNet, volley, overhead } = lastTurnInfo;
+          guided, powershot, complex, dropshot, approach, smashable, antiNet, volley, overhead,
+          targetOpposite } = lastTurnInfo;
 
   const arrow = playerIndex === 0
     ? `<span class="ct-p ct-p1">P1</span><span class="ct-arrow">&gt;&gt;&gt;&gt;</span><span class="ct-p ct-p2">P2</span>`
@@ -298,16 +300,17 @@ function renderCurrentTurnPanel() {
   // pushed the stats onto a second line and cost the panel a row it doesn't
   // have at 360×690.
   const badges = [
-    missed    && '<span class="ct-miss">✗ Промах</span>',
-    guided    && '<span class="badge badge-guided">Guided</span>',
-    powershot && '<span class="badge badge-power">+1d6</span>',
-    complex   && '<span class="badge badge-complex">Complex</span>',
-    dropshot  && '<span class="badge badge-drop">Drop</span>',
-    approach  && '<span class="badge badge-approach">Approach</span>',
-    smashable && '<span class="badge badge-smash">Smashable</span>',
-    antiNet   && '<span class="badge badge-anti">Anti-Net</span>',
-    volley    && '<span class="badge badge-volley">Volley</span>',
-    overhead  && '<span class="badge badge-overhead">Overhead</span>',
+    missed         && '<span class="ct-miss">✗ Промах</span>',
+    guided         && '<span class="badge badge-guided">Прицельный</span>',
+    powershot      && '<span class="badge badge-power">Мощный</span>',
+    complex        && '<span class="badge badge-complex">Сложный</span>',
+    dropshot       && '<span class="badge badge-drop">Укороченный</span>',
+    approach       && '<span class="badge badge-approach">К сетке</span>',
+    smashable      && '<span class="badge badge-smash">Высокий</span>',
+    antiNet        && '<span class="badge badge-anti">Анти-сетка</span>',
+    volley         && '<span class="badge badge-volley">С лёта</span>',
+    overhead       && '<span class="badge badge-overhead">Из-за головы</span>',
+    targetOpposite && '<span class="badge badge-target">В пустой угол</span>',
   ].filter(Boolean).join('');
 
   const total = baseDifficulty + powershotBonus;

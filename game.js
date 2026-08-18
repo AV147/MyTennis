@@ -504,6 +504,7 @@ function playCard(playerIndex, cardIndex) {
       antiNet:   card.antiNet,
       volley:    card.volley,
       overhead:  card.overhead,
+      targetOpposite: card.targetOpposite,
       missed:    !!missed,
     };
   }

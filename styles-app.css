@@ -863,6 +863,7 @@ button { font-family: inherit; }
 .badge-anti     { background: #002040; color: #40a0e0; border: 1px solid #1060c0; }
 .badge-overhead { background: #2a1000; color: #f0b030; border: 1px solid #a06000; }
 .badge-approach { background: #1a3a00; color: #90d050; border: 1px solid #408020; }
+.badge-target   { background: #3a2a00; color: #e0c060; border: 1px solid #a08020; }
 
 /* active-discard checkbox row */
 .mark-checkbox-row {
@@ -911,6 +912,13 @@ button { font-family: inherit; }
   cursor: not-allowed;
 }
 .app-player-panel .card:has(.play-btn-disabled) { opacity: .65; }
+
+/* While the player is choosing where to run, the badges are noise and the move
+   buttons must stay reachable. The busiest card (Сложный · Укороченный ·
+   К сетке) overflows its max-height otherwise and clips them off the bottom —
+   it already did with the shorter English labels. */
+.app-player-panel .card:has(.discard-move) .card-badges,
+.app-player-panel .card:has(.discard-move) .mark-checkbox-row { display: none; }
 
 /* reposition buttons after successful shot */
 .discard-move {
