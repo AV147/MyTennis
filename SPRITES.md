@@ -74,12 +74,13 @@ assets/
       kw-guided.svg           12×12     Прицельный
       kw-complex.svg          12×12     Сложный
       kw-drop.svg             12×12     Укороченный
-      kw-volley.svg           12×12     Слёта
-      kw-smashable.svg        12×12     Можно смэшировать
+      kw-volley.svg           12×12     С лёта
+      kw-smashable.svg        12×12     Высокий
       kw-anti-net.svg         12×12     Анти-сетка
-      kw-approach.svg         12×12     Выход к сетке
-      kw-overhead.svg         12×12     Смэш/overhead
-      kw-powershot.svg        12×12     +1d6
+      kw-approach.svg         12×12     К сетке
+      kw-overhead.svg         12×12     Из-за головы
+      kw-powershot.svg        12×12     Мощный
+      kw-target.svg           12×12     В пустой угол
       discard-red.svg         14×14     метка сброса 🔴
       discard-blue.svg        14×14     🔵
       discard-green.svg       14×14     🟢
