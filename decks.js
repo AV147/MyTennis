@@ -83,9 +83,9 @@ class Card {
 
 // ===== CARD LIBRARY =====
 const CARD_LIBRARY = {
-  FlatServe: new Card(  "Плоская подача", "Сильная плоская подача для давления на оппонента", 10, 0, "serve" ),
+  FlatServe: new Card(  "Плоская подача", "Сильная плоская подача для давления на оппонента", 10, 0, "serve", { guided: true } ),
   
-  KickServe: new Card( "Крученая подача", "Более надежная, но слабая крученая подача", 7, 2, "serve" ),
+  KickServe: new Card( "Крученая подача", "Более надежная, но слабая крученая подача", 7, 2, "serve", { guided: true } ),
   
   StrongForehand: new Card("Сильный удар", "Сильный атакующий удар", 6, 2,  "return", {} ),
   
