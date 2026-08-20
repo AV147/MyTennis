@@ -395,7 +395,13 @@ function shotVisual(player, opponent, card, shotOriginPosition, shotSpin) {
   else if (card.smashable)            curveSpin = 4;                 // полусвечка
   else curveSpin = Math.max(0, Math.min(3, shotSpin));              // 0–3 (3 via blue discard)
 
-  return { from, to, curveSpin };
+  // Cosmetic only: a flat serve has spin 0, which would draw it as a dead
+  // straight laser. Give it half the kick serve's curve so it still reads as a
+  // ball flying over a net. Nothing here feeds the dice — shotSpin is untouched.
+  if (card.type === 'serve') curveSpin = Math.max(1, curveSpin);
+
+  // Serves leave the racket above the head, not from the player's middle.
+  return { from, to, curveSpin, fromTop: card.type === 'serve' };
 }
 
 // ===== MAIN PLAY ACTION =====
@@ -545,7 +551,7 @@ function playCard(playerIndex, cardIndex) {
     const playerSide = playerIndex === 0 ? 'p1' : 'p2';
     const vis = shotVisual(player, opponent, card, shotOriginPosition, shotSpin);
     const effPower = shotPower + (card.powershot ? pendingPowershotBonus : 0);
-    drawShotLine(vis.from, vis.to, playerSide, vis.curveSpin, effPower);
+    drawShotLine(vis.from, vis.to, playerSide, vis.curveSpin, effPower, vis.fromTop);
     opponent.inPosition = !calcOpponentOutOfPosition(card, shotOriginPosition, opponent);
 
     // Post-hit movement: approach / dropshot advance to the net. The sideways
@@ -646,7 +652,7 @@ function playCard(playerIndex, cardIndex) {
 
     const playerSide = playerIndex === 0 ? 'p1' : 'p2';
     const vis = shotVisual(player, opponent, card, player.position, shotSpin);
-    drawShotLine(vis.from, vis.to, playerSide, vis.curveSpin, shotPower);
+    drawShotLine(vis.from, vis.to, playerSide, vis.curveSpin, shotPower, vis.fromTop);
 
     endPoint(1 - playerIndex);
     render(players, currentPlayer, gameLog);
