@@ -39,7 +39,7 @@ function ensureShotStyles() {
       box-shadow: 0 0 7px rgba(204,255,0,.9), 0 1px 2px rgba(0,0,0,.4);
     }
     .player-token.player-sprite {
-      width: auto; height: 46px; border: none; background: none; box-shadow: none;
+      width: auto; height: 52px; border: none; background: none; box-shadow: none;
       border-radius: 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.55));
     }`;
   document.head.appendChild(s);
@@ -50,6 +50,25 @@ function ensureShotStyles() {
 function clearShotLine() {
   if (currentShotLine) { currentShotLine.remove(); currentShotLine = null; }
   if (currentShotBall) { currentShotBall.remove(); currentShotBall = null; }
+}
+
+/**
+ * Where a shot leaves the player. Normally the middle of their zone, but a
+ * serve is struck above the head — starting it at the player's centre makes
+ * the ball look like it comes out of their chest. Reads the sprite's own box
+ * so it follows whatever pose is on screen.
+ */
+function shotOrigin(id, courtRect, fromTop) {
+  const c = zoneCenter(id, courtRect);
+  if (!c || !fromTop) return c;
+  const sprite = document.querySelector(`[data-id="${id}"] .player-sprite`);
+  if (sprite) {
+    const r = sprite.getBoundingClientRect();
+    // Sprites are bottom-aligned in a common canvas, so the raised racket and
+    // the tossed ball sit in the top tenth of the box.
+    if (r.height) return { x: c.x, y: r.top - courtRect.top + r.height * 0.12 };
+  }
+  return { x: c.x, y: c.y - 22 };   // no sprite (headless/tests): top of a 52px box
 }
 
 // Centre of a court zone, in coordinates relative to the court (so the shot
@@ -68,7 +87,7 @@ function zoneCenter(id, courtRect) {
  * The layer lives inside #court (court-relative coords) so it scrolls with the
  * court; #court has overflow:visible so a high lob still arcs into the score bar.
  */
-function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power = 5) {
+function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power = 5, fromTop = false) {
   clearShotLine();
   ensureShotStyles();
 
@@ -76,7 +95,7 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
   if (!court) return;
   const courtRect = court.getBoundingClientRect();
 
-  const from = zoneCenter(`${playerSide}-${fromPosition}`, courtRect);
+  const from = shotOrigin(`${playerSide}-${fromPosition}`, courtRect, fromTop);
   if (!from) return;
 
   const opp = playerSide === 'p1' ? 'p2' : 'p1';
@@ -135,8 +154,34 @@ function drawShotLine(fromPosition, toPosition, playerSide, curveSpin = 0, power
  * shows one male + one female.
  * @param {boolean} shiftToCenter - true when the last shot was neutral direction
  */
+// Poses each sprite comes in: neutral, serving, and crouched at the net.
+const SPRITE_STANCES = ['', '-serve', '-net'];
+let spritesPreloaded = false;
+
+/** Warm the browser cache so swapping pose mid-rally doesn't flash. */
+function preloadSprites() {
+  if (spritesPreloaded || typeof Image === 'undefined') return;
+  spritesPreloaded = true;
+  for (const p of ['p1', 'p2'])
+    for (const g of ['fem', 'male'])
+      for (const st of SPRITE_STANCES) { const i = new Image(); i.src = `${p}-${g}${st}.png`; }
+}
+
+/**
+ * Which pose a player is drawn in. Standing at the net wins over serving (you
+ * cannot serve from there), and the serve pose holds across both attempts —
+ * until the serve lands and the rally proper begins (incomingPower > 0).
+ */
+function spriteStance(player, idx) {
+  if (player.position === 'Net') return '-net';
+  const isServer    = typeof servingPlayer !== 'undefined' && idx === servingPlayer;
+  const beforeRally = typeof incomingPower === 'undefined' || incomingPower === 0;
+  return (isServer && beforeRally) ? '-serve' : '';
+}
+
 function renderCourtPositions(players, currentPlayerIndex = -1, shiftToCenter = false) {
   ensureShotStyles();
+  preloadSprites();
   document.querySelectorAll('.player-token').forEach(el => el.remove());
 
   const aiVer = (typeof aiVersion !== 'undefined' && aiVersion) ? aiVersion[1] : 2;
@@ -151,7 +196,7 @@ function renderCourtPositions(players, currentPlayerIndex = -1, shiftToCenter = 
     const gender = idx === 1 ? (aiIsFem ? 'fem' : 'male') : (aiIsFem ? 'male' : 'fem');
     const img = document.createElement('img');
     img.className = 'player-token player-sprite';
-    img.src = `${prefix}-${gender}.png`;
+    img.src = `${prefix}-${gender}${spriteStance(player, idx)}.png`;
     img.alt = `P${idx + 1}`;
 
     // P1: BR at bottom (top:75%) shifts up→22%, BL at top (top:25%) shifts down→78%
