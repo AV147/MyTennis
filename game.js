@@ -376,9 +376,11 @@ function calcOpponentOutOfPosition(card, shooterPosition, opponent) {
 
 // Where to draw the shot trajectory, refining the raw target for realism:
 //  • responding to a dropshot → the shooter ran up to the net, so start there;
-//  • opponent already at the net → the line stops at them, UNLESS it's a lob
-//    (Anti-Net + Smashable), which arcs over into the back corner it drives
-//    them to (the corner the shooter struck from);
+//  • opponent already at the net → the line stops at them, because they are
+//    standing in its path — but only for shots that do NOT beat a net player.
+//    An Anti-Net card by definition gets past them: a lob arcs over into the
+//    back corner it drives them to, and a passing shot keeps its own target
+//    and flies by them down the line;
 //  • curveSpin sets the arc height: effective spin 0–3, half-lob 4, lob 5.
 function shotVisual(player, opponent, card, shotOriginPosition, shotSpin) {
   const respondingToDropshot = player.positionBeforeDropshot !== null;
@@ -386,8 +388,13 @@ function shotVisual(player, opponent, card, shotOriginPosition, shotSpin) {
 
   let to = getTargetPosition(shotOriginPosition, card.type, card, opponent.position);
   if (opponent.position === 'Net') {
-    const isLob = card.antiNet && card.smashable;
-    to = isLob ? shotOriginPosition : 'Net';
+    if (card.antiNet && card.smashable) {
+      to = shotOriginPosition;   // свеча: over their head into the corner they get driven to
+    } else if (!card.antiNet) {
+      to = 'Net';                // ordinary shot: the net player is in its path
+    }
+    // Anti-Net without smashable (Сильный удар по линии) is a passing shot —
+    // it keeps its own target and goes by them, which is what the mark means.
   }
 
   let curveSpin;
