@@ -317,21 +317,8 @@ button { font-family: inherit; }
   color: #a8c0d8;
   font-weight: 600;
 }
-/* Sits in the panel's badge row, so it matches the badges around it. */
-.ct-miss {
-  flex: 0 0 auto;
-  color: #ff8070;
-  font-weight: 800;
-  font-size: 8px;
-  letter-spacing: 0.04em;
-  background: rgba(192,57,43,.18);
-  border: 1px solid #c0392b;
-  border-radius: 3px;
-  padding: 1px 5px;
-}
 /* One line only: the panel has no room for a second badge row at 360×690, and
-   the same badges are on the card in hand (with full text in the card sheet).
-   ✗ Промах is emitted first, so what gets clipped is the least important. */
+   the same badges are on the card in hand (with full text in the card sheet). */
 .current-turn-panel .card-badges {
   flex-wrap: nowrap;
   overflow: hidden;
