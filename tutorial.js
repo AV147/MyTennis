@@ -13,6 +13,8 @@
 //   text     — tooltip + «Далее»
 //   play     — wait for the player to play one specific card
 //   move     — wait for the player to discard one card to reposition
+//   mark     — wait for the player to tick one card for the active discard
+//   pass     — wait for the player to press «✓ Передать ход»
 //   ai       — the opponent plays its scripted card after the usual delay
 //   end      — closing tooltip, hands the match back to the real AI
 //
@@ -47,6 +49,10 @@ const TUT_SCRIPT = [
   { kind: 'text', target: '#app-turn-section',
     text: 'Подача прошла. Сложность вашей карты — это её <strong>Сила − Спин</strong>: 10 − 0 = 10, плюс 1 за метку <strong>Прицельный</strong> — итого <strong>11</strong>. Бросок кубиков считается как 6 + 3 + 3 = <strong>12</strong>. 12 ≥ 11 — мяч в корте.' },
 
+  { kind: 'pass', target: '#player1 .ai-btn-pass',
+    text: 'Ход уходит не сразу: после удара вам дают окно, чтобы перебежать в другую зону. Сейчас перебегать незачем — нажмите «<strong>✓ Передать ход</strong>».<br>А если вы всё-таки перебежите, ход передастся сам, отдельно нажимать не придётся.',
+    hint: '👆 «✓ Передать ход»' },
+
   { kind: 'ai', card: 'StrongForehand', roll: { dice: [2, 3] } },
 
   { kind: 'text', target: '#app-turn-section',
@@ -78,12 +84,19 @@ const TUT_SCRIPT = [
   { kind: 'text', target: '#player1 .st-pos',
     text: 'Соперник ответил <strong>по линии</strong> — мяч ушёл в тот угол, где вас нет. Вы <strong>вне позиции</strong>: на следующий удар у вас не два кубика, а один. Отбить такой мяч заметно сложнее.' },
 
+  { kind: 'mark', card: 'Slice',
+    text: 'Одному кубику надо помочь. Перед ударом можно <strong>сбросить</strong> лишнюю карту ради бонуса — отметьте галочкой <strong>Резаный</strong>. Синие карты дают <strong>+1 к вращению</strong>: вращение вычитается из сложности вашего удара, так что шанс попасть вырастет.',
+    hint: '👆 Галочка «🔵 +1 Спин» на «Резаном»' },
+
   { kind: 'play', card: 'WeakCrossCourt', roll: { dice: [5] },
-    text: 'Выберите надёжную карту — <strong>Удар по диагонали</strong> (4 / 2). Вы добежите до мяча и ударите уже из другого угла.',
+    text: 'Теперь бейте — <strong>Удар по диагонали</strong> (4 / 2). Вы добежите до мяча и ударите уже из другого угла.',
     hint: '👆 «▶ Играть» на ударе по диагонали' },
 
   { kind: 'text', target: '#app-court-wrap',
-    text: 'Достали: бросок 6 + 5 − 1 усталости = <strong>10</strong> против сложности <strong>7</strong>. Теперь вне позиции соперник — диагональ увела мяч от него. А вот неприцельные удары, без пометки «по линии» или «по диагонали», соперник всегда отбивает в позиции.' },
+    text: 'Достали: бросок 6 + 5 − 1 усталости = <strong>10</strong> против сложности <strong>6</strong> — сброс срезал с неё единицу. Другие цвета: 🔴 красная даёт <strong>+2 к силе</strong>, 🟢 зелёная — <strong>бесплатный добор</strong> карты.' },
+
+  { kind: 'text', target: '#app-court-wrap',
+    text: 'Теперь вне позиции соперник — диагональ увела мяч от него. А вот неприцельные удары, без пометки «по линии» или «по диагонали», соперник всегда отбивает в позиции.' },
 
   { kind: 'ai', card: 'StrikeDownTheLine', roll: { dice: [3], d3: 2 } },
 
@@ -94,7 +107,7 @@ const TUT_SCRIPT = [
   // ═══ Розыгрыш 3 — выход к сетке, удар слёта, свеча и смэш ═══════════════
   { kind: 'newpoint' },
   { kind: 'deal',
-    p0: ['FlatServe', 'KickServe', 'VolleyStrike', 'Smash', 'Slice'],
+    p0: ['FlatServe', 'KickServe', 'VolleyStrike', 'Smash', 'VolleySlice'],
     p1: ['WeakCrossCourt', 'Lob', 'StrongForehand', 'Slice', 'WeakForehand'] },
 
   { kind: 'play', card: 'FlatServe', roll: { dice: [5, 4] },
@@ -122,12 +135,16 @@ const TUT_SCRIPT = [
   { kind: 'text', target: '#app-court-wrap',
     text: 'Соперник достал <strong>Свечку</strong> — это ответ против игрока у сетки: мяч перебрасывает вас, и вы отбегаете назад вне позиции. Но на любую свечу и полусвечку можно ответить <strong>смэшем</strong> — он у вас как раз есть.' },
 
+  { kind: 'mark', card: 'VolleySlice',
+    text: 'Раз вы уже не у сетки, <strong>Резаный с лёта</strong> отсюда не сыграть — карта мёртвым грузом лежит в руке. Отметьте её: зелёный сброс даёт <strong>бесплатный добор</strong>, и вместо неё придёт карта, которую можно сыграть сзади.',
+    hint: '👆 Галочка «🟢 Добор» на резаном с лёта' },
+
   { kind: 'play', card: 'Smash', roll: { dice: [6] }, powerDie: 5,
-    text: 'Отвечайте <strong>Смэшем</strong>.',
+    text: 'А теперь отвечайте <strong>Смэшем</strong>.',
     hint: '👆 «▶ Играть» на смэше' },
 
   { kind: 'text', target: '#app-turn-section',
-    text: 'Смэш — сильный удар из-за головы. После попадания бросается <strong>красный кубик</strong>, и его значение (здесь <strong>+5</strong>) добавляется к сложности ответного удара соперника.' },
+    text: 'Смэш — сильный удар из-за головы. После попадания бросается <strong>красный кубик</strong>, и его значение (здесь <strong>+5</strong>) добавляется к сложности ответного удара соперника. Зелёная карта тем временем ушла в сброс, а взамен пришла новая.' },
 
   { kind: 'ai', card: 'StrongForehand', roll: { dice: [3, 4] } },
 
@@ -172,7 +189,7 @@ const TUT_SCRIPT = [
 // Beats that get a "Шаг N из M" counter
 const TUT_NUMBERED = TUT_SCRIPT
   .map((b, i) => ({ b, i }))
-  .filter(({ b }) => b.numbered !== false && ['text', 'play', 'move'].includes(b.kind))
+  .filter(({ b }) => b.numbered !== false && ['text', 'play', 'move', 'mark', 'pass'].includes(b.kind))
   .map(({ i }) => i);
 
 // ── Pacing ─────────────────────────────────────────────────────────────────
@@ -314,7 +331,7 @@ function tutHideShades() {
 /** The element a beat points at, or null for a centered tooltip. */
 function tutTargetEl(beat) {
   if (!beat) return null;
-  if (beat.kind === 'play' || beat.kind === 'move') {
+  if (beat.kind === 'play' || beat.kind === 'move' || beat.kind === 'mark') {
     const i = tutHandIndex(beat.card);
     if (i === -1) return null;
     return document.querySelectorAll('#player1 .hand .card')[i] || null;
@@ -329,7 +346,7 @@ function tutPosition() {
   const { shades, blocker, ring, tip } = tutEls;
   const el = tutTargetEl(beat);
   const shade = beat.shade || (beat.kind === 'ai' ? 'none' : 'soft');
-  const interactive = beat.kind === 'play' || beat.kind === 'move';
+  const interactive = ['play', 'move', 'mark', 'pass'].includes(beat.kind);
 
   tip.style.display = 'block';
 
@@ -415,14 +432,21 @@ function tutApplyLocks() {
 
   // Draw and "Новый розыгрыш" are driven by the script, never by the player
   panel.querySelectorAll('.draw-btn').forEach(b => b.remove());
-  // Marking a card for active discard would change the power/spin the tooltips
-  // quote, so it stays off for the whole walkthrough
-  panel.querySelectorAll('.mark-checkbox-row').forEach(b => b.remove());
+  // "Передать ход" only exists on the beat that teaches it. An ai beat holds
+  // the reposition window open to stall the scheduler, which would otherwise
+  // flash this button on and off every time the opponent moves.
+  if (beat.kind !== 'pass')
+    panel.querySelectorAll('.ai-btn-pass').forEach(b => b.remove());
 
   const wantPlay = beat.kind === 'play' ? tutHandIndex(beat.card) : -1;
   const wantMove = beat.kind === 'move' ? tutHandIndex(beat.card) : -1;
+  // Marking any other card would change the power/spin the tooltips quote.
+  const wantMark = beat.kind === 'mark' ? tutHandIndex(beat.card) : -1;
 
   panel.querySelectorAll('.hand .card').forEach((cardEl, idx) => {
+    const mark = cardEl.querySelector('.mark-checkbox-row');
+    if (mark && idx !== wantMark) mark.remove();
+
     const playBtn = cardEl.querySelector('.play-btn');
     if (playBtn && idx !== wantPlay) {
       playBtn.disabled = true;
@@ -490,11 +514,16 @@ function tutEnterBeat(i) {
 
     case 'play':
     case 'move':
+    case 'mark':
       tutPendingRoll     = beat.roll || null;
       tutPendingPowerDie = beat.powerDie != null ? beat.powerDie : null;
       // The card the beat is about must still be in hand, otherwise the script
       // has desynced (shouldn't happen — everything else is locked).
       if (tutHandIndex(beat.card) === -1) { tutBail(); return; }
+      tutRenderTip(beat);
+      return;
+
+    case 'pass':
       tutRenderTip(beat);
       return;
 
@@ -530,6 +559,8 @@ function tutRenderTip(beat) {
     actionHtml = '<span class="tut-hint tut-hint-wait">🎾 Отвечает соперник…</span>';
   else if (beat.kind === 'text' || beat.kind === 'end')
     actionHtml = `<button class="tut-next">${beat.nextLabel || 'Далее ›'}</button>`;
+  else if (beat.kind === 'pass')
+    actionHtml = `<span class="tut-hint">${beat.hint || ''}</span>`;
   else
     actionHtml = `<span class="tut-hint">${beat.hint || ''}</span>`;
 
@@ -610,6 +641,14 @@ window.__tutorialNotify = function (note, playerIndex) {
     tutAdvance(TUT_AFTER_MOVE_MS);
     return;
   }
+  if (note === 'marked' && playerIndex === 0 && beat.kind === 'mark') {
+    tutAdvance(300);   // the tick is instant feedback; don't dawdle
+    return;
+  }
+  if (note === 'passturn' && playerIndex === 0 && beat.kind === 'pass') {
+    tutAdvance(TUT_AFTER_MOVE_MS);
+    return;
+  }
 };
 
 // Wrap the game functions the tutorial drives or listens for. Function
@@ -641,6 +680,23 @@ window.__tutorialNotify = function (note, playerIndex) {
     playCard = function (playerIndex, cardIndex) {
       orig(playerIndex, cardIndex);
       if (window.__tutorialNotify) window.__tutorialNotify('played', playerIndex);
+    };
+  }
+
+  if (typeof markCardForDiscard === 'function') {
+    const orig = markCardForDiscard;
+    markCardForDiscard = function (playerIndex, cardIndex, checked) {
+      orig(playerIndex, cardIndex, checked);
+      // Only ticking on counts — unticking must not advance the script.
+      if (checked && window.__tutorialNotify) window.__tutorialNotify('marked', playerIndex);
+    };
+  }
+
+  if (typeof aiPassTurn === 'function') {
+    const orig = aiPassTurn;
+    aiPassTurn = function (playerIndex) {
+      orig(playerIndex);
+      if (window.__tutorialNotify) window.__tutorialNotify('passturn', playerIndex);
     };
   }
 
