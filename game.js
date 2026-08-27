@@ -498,7 +498,7 @@ function playCard(playerIndex, cardIndex) {
 
   // Snapshot for the "Текущий ход" panel — set for both hits and misses so the
   // panel always matches the dice roll on screen.
-  function recordTurn(missed, psBonus) {
+  function recordTurn(psBonus) {
     lastTurnInfo = {
       playerIndex,
       cardName:       card.name,
@@ -518,7 +518,6 @@ function playCard(playerIndex, cardIndex) {
       volley:    card.volley,
       overhead:  card.overhead,
       targetOpposite: card.targetOpposite,
-      missed:    !!missed,
     };
   }
 
@@ -583,7 +582,7 @@ function playCard(playerIndex, cardIndex) {
     }
 
     // Update current-turn info for the panel
-    recordTurn(false, pendingPowershotBonus);
+    recordTurn(pendingPowershotBonus);
 
     incomingPower = shotPower;
     incomingSpin  = shotSpin;
@@ -608,7 +607,7 @@ function playCard(playerIndex, cardIndex) {
   } else {
     // Serve fault
     if (card.type === 'serve') {
-      recordTurn(true, 0);
+      recordTurn(0);
       if (serveAttempt === 1) {
         log(`${player.name} — ОШИБКА подачи <strong>${card.name}</strong> ${cardStat}! Вторая подача.<br>${rollStr} против ${vsStr} ✗`);
         displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
@@ -652,7 +651,7 @@ function playCard(playerIndex, cardIndex) {
 
     log(`${player.name} ПРОМАХ <strong>${card.name}</strong> ${cardStat}! | ${posStr}${extras}<br>${rollStr} против ${vsStr} ✗`);
     displayDiceRoll(playerIndex, info.diceValues, info.diceRoll, info.fatigue, info.skillCheck, info.d3Value || 0, 0, false);
-    recordTurn(true, 0);
+    recordTurn(0);
 
     player.fatigue += v1;
     if (missedOutOfPosition) player.fatigue += v2;

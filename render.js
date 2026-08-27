@@ -288,7 +288,7 @@ function renderCurrentTurnPanel() {
     return;
   }
 
-  const { playerIndex, cardName, power, spin, baseDifficulty, powershotBonus, missed,
+  const { playerIndex, cardName, power, spin, baseDifficulty, powershotBonus,
           guided, powershot, complex, dropshot, approach, smashable, antiNet, volley, overhead,
           targetOpposite } = lastTurnInfo;
 
@@ -296,11 +296,10 @@ function renderCurrentTurnPanel() {
     ? `<span class="ct-p ct-p1">P1</span><span class="ct-arrow">&gt;&gt;&gt;&gt;</span><span class="ct-p ct-p2">P2</span>`
     : `<span class="ct-p ct-p1">P1</span><span class="ct-arrow">&lt;&lt;&lt;&lt;</span><span class="ct-p ct-p2">P2</span>`;
 
-  // The miss marker rides with the badges, not with ⚡/🌀: in the name row it
-  // pushed the stats onto a second line and cost the panel a row it doesn't
-  // have at 360×690.
+  // No miss marker here: the dice block already announces ✓ Успех / ✗ Ошибка
+  // for the very same shot, and it survives the short-screen media query. One
+  // less thing competing for the single badge line.
   const badges = [
-    missed         && '<span class="ct-miss">✗ Промах</span>',
     guided         && '<span class="badge badge-guided">Прицельный</span>',
     powershot      && '<span class="badge badge-power">Мощный</span>',
     complex        && '<span class="badge badge-complex">Сложный</span>',
