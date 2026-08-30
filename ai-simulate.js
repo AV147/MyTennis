@@ -26,7 +26,7 @@ function simIsCardPlayable(card, player, incPower, incCard) {
 function simCalcProb(player, card, incPower, incSpin, incCard, powershotBonus,
                      bonusPower = 0, bonusSpin = 0) {
   const isRespondingToDropshot = incCard && incCard.dropshot;
-  const effectivelyInPos = player.inPosition || (card.approach && isRespondingToDropshot);
+  const effectivelyInPos = player.inPosition || card.overhead || (card.approach && isRespondingToDropshot);
   const { v2 } = getFatigueIncrements();
   const fatigue = player.fatigue + (!effectivelyInPos && v2 > 0 ? v2 : 0);
 
@@ -265,6 +265,7 @@ function simRunPoint(p0, p1, servingPlayerIdx, startPos, engineP0, engineP1) {
 
     // Approach+dropshot overrides OOP penalty — capture wasInPos AFTER this override
     if (playedCard.approach && incCard && incCard.dropshot) player.inPosition = true;
+    if (playedCard.overhead) player.inPosition = true;   // smash always hit in position
     const wasInPos = player.inPosition;
 
     const result = resolveShot(player, playedCard, incPower, incSpin, incCard, powershotBonus,

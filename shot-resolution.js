@@ -48,6 +48,11 @@ function resolveShot(player, card, incomingPower, incomingSpin, incomingCard = n
   if (card.approach && !player.inPosition && isRespondingToDropshot) {
     player.inPosition = true;
   }
+  // The smash (overhead) is always struck as if in position — you set under the
+  // high ball, so it never takes the single-die out-of-position penalty.
+  if (card.overhead && !player.inPosition) {
+    player.inPosition = true;
+  }
 
   // V2 fatigue: being out of position costs extra on this shot's skill check
   const increments = getFatigueIncrements();
