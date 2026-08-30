@@ -248,11 +248,11 @@
     // Fail-open: if localStorage is unavailable, treat it as already seen so a
     // user can never get stuck unable to unlock.
     function tutorialSeen() {
-      try { return localStorage.getItem('mytennis-tutorial-seen') === '1'; }
+      try { return localStorage.getItem('mytennis-tutorial-seen-v2') === '1'; }
       catch (e) { return true; }
     }
     function markTutorialSeen() {
-      try { localStorage.setItem('mytennis-tutorial-seen', '1'); } catch (e) {}
+      try { localStorage.setItem('mytennis-tutorial-seen-v2', '1'); } catch (e) {}
       updatePlayLock();
     }
     function updatePlayLock() {

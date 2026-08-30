@@ -308,7 +308,7 @@ v3LoadFromLocalStorage();
 // ── Shared probability helper (same formula as v1/v2) ─────────────────────
 function v3CalcProb(player, card, incPower, incSpin, incCard, psBonus) {
   const rToDropshot = incCard && incCard.dropshot;
-  const effInPos = player.inPosition || (card.approach && rToDropshot);
+  const effInPos = player.inPosition || card.overhead || (card.approach && rToDropshot);
   const { v2 } = getFatigueIncrements();
   const fat = player.fatigue + (!effInPos && v2 > 0 ? v2 : 0);
   const outgoing = card.power - card.spin;

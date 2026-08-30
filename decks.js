@@ -95,7 +95,7 @@ const CARD_LIBRARY = {
 
   StrikeDownTheLine: new Card("Сильный удар по линии","Сильный атакующий удар по линии. Сложный (-1d3 к кубикам). Выбивает игрока у сетки", 6, 2, "return", { complex: true, direction: 'line', antiNet: true }),
 
-  StrikeCrossCourt: new Card("Сильный удар по диагонали", "Сильныq атакующий удар по диагонали. Прицельный (+1 сложность)", 6, 2, "return",{ guided: true, direction: 'cross' }  ),
+  StrikeCrossCourt: new Card("Сильный удар по диагонали", "Сильный атакующий удар по диагонали. Прицельный (+1 сложность)", 6, 2, "return",{ guided: true, direction: 'cross' }  ),
 
   SliceDownTheLine: new Card("Резаный по линии","Защитный резаный удар с вращением по линии. Сложный (-1d3 к кубикам)",  2, 2, "return",  { complex: true, direction: 'line' } ),
 
@@ -168,7 +168,7 @@ const CARD_LIBRARY = {
   
   Smash: new Card(
    "Смэш",
-    "Сильный удар из-за головы по высокому мячу. +1d6 сила для оппонента",
+    "Сильный удар из-за головы по высокому мячу. +1d6 сила для оппонента. Бьётся как из позиции",
     6,         // power
     1,         // spin
     "return",  // type

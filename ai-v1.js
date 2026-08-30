@@ -8,7 +8,7 @@ const AIv1 = (() => {
   function calcProbability(player, card, incPower, incSpin, incCard, powershotBonus,
                             bonusPower = 0, bonusSpin = 0) {
     const isRespondingToDropshot = incCard && incCard.dropshot;
-    const effectivelyInPos = player.inPosition || (card.approach && isRespondingToDropshot);
+    const effectivelyInPos = player.inPosition || card.overhead || (card.approach && isRespondingToDropshot);
     const { v2 } = getFatigueIncrements();
     const fatigue = player.fatigue + (!effectivelyInPos && v2 > 0 ? v2 : 0);
 
