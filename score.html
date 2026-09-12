@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Мой Теннис — Счёт</title>
+  <link rel="stylesheet" href="styles-score.css">
+</head>
+<body>
+
+<!-- ═══════════ SETUP: формат матча ═══════════ -->
+<section id="screen-format" class="screen">
+  <div class="setup-inner">
+    <div class="setup-logo">🎾</div>
+    <h1 class="setup-title">СЧЁТ</h1>
+    <p class="setup-sub">Мой Теннис</p>
+
+    <div class="setup-label">Что играем?</div>
+    <button class="opt-btn" data-mode="tb">Тайбрейк</button>
+    <button class="opt-btn" data-mode="set1">1 сет</button>
+    <button class="opt-btn" data-mode="bo3">До 2 побед</button>
+    <button class="opt-btn" data-mode="bo5">До 3 побед</button>
+  </div>
+</section>
+
+<!-- ═══════════ SETUP: детали формата ═══════════ -->
+<section id="screen-detail" class="screen">
+  <div class="setup-inner">
+    <div class="setup-crumb" id="detail-crumb">Тайбрейк</div>
+    <div class="setup-label" id="detail-label">До скольки?</div>
+    <div id="detail-options"></div>
+    <button class="opt-btn opt-back" data-back="format">← Назад</button>
+  </div>
+</section>
+
+<!-- ═══════════ SETUP: кто подаёт ═══════════ -->
+<section id="screen-server" class="screen">
+  <div class="setup-inner">
+    <div class="setup-crumb" id="server-crumb"></div>
+    <div class="setup-label">Кто подаёт первым?</div>
+    <button class="opt-btn opt-serve" data-server="0"><span class="ball">🎾</span> Игрок 1</button>
+    <button class="opt-btn opt-serve" data-server="1"><span class="ball">🎾</span> Игрок 2</button>
+    <button class="opt-btn opt-back" data-back="detail">← Назад</button>
+  </div>
+</section>
+
+<!-- ═══════════ МАТЧ ═══════════ -->
+<section id="screen-match" class="screen">
+
+  <header id="top-bar">
+    <button id="btn-menu" class="icon-btn" title="Новый матч">☰</button>
+    <span id="format-label">1 сет</span>
+    <button id="btn-undo" class="icon-btn" title="Отменить очко">↶</button>
+  </header>
+
+  <div id="scoreboard">
+    <div class="sb-row" id="sb-row-0">
+      <span class="sb-serve" id="sb-serve-0">🎾</span>
+      <span class="sb-name">Игрок 1</span>
+      <span class="sb-cells" id="sb-cells-0"></span>
+    </div>
+    <div class="sb-row" id="sb-row-1">
+      <span class="sb-serve" id="sb-serve-1">🎾</span>
+      <span class="sb-name">Игрок 2</span>
+      <span class="sb-cells" id="sb-cells-1"></span>
+    </div>
+  </div>
+
+  <div id="serve-banner"><span id="serve-text">Подаёт Игрок 1</span></div>
+
+  <div id="dials">
+    <div class="dial" data-p="0">
+      <div class="dial-ghost dial-up"   id="ghost-up-0"></div>
+      <div class="dial-value"           id="val-0">0</div>
+      <div class="dial-ghost dial-down" id="ghost-down-0"></div>
+      <div class="dial-name">Игрок 1</div>
+    </div>
+    <div class="dial-divider"></div>
+    <div class="dial" data-p="1">
+      <div class="dial-ghost dial-up"   id="ghost-up-1"></div>
+      <div class="dial-value"           id="val-1">0</div>
+      <div class="dial-ghost dial-down" id="ghost-down-1"></div>
+      <div class="dial-name">Игрок 2</div>
+    </div>
+  </div>
+
+  <footer id="bottom-bar">
+    <span class="hint">Свайп ↑ или тап — очко · свайп ↓ — назад</span>
+  </footer>
+</section>
+
+<!-- ═══════════ Модалки ═══════════ -->
+<div id="modal-decider" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">Решающий сет</div>
+    <p class="modal-text">Играем тайбрейк до 10 или обычный сет?</p>
+    <button class="modal-btn modal-btn-main" data-decider="tb10">Тайбрейк до 10</button>
+    <button class="modal-btn" data-decider="set">Обычный сет</button>
+  </div>
+</div>
+
+<div id="modal-winner" class="modal">
+  <div class="modal-box">
+    <div class="modal-trophy">🏆</div>
+    <div class="modal-title" id="winner-title">Матч!</div>
+    <p class="modal-text" id="winner-score"></p>
+    <button class="modal-btn modal-btn-main" id="btn-new-match">Новый матч</button>
+    <button class="modal-btn" id="btn-winner-undo">↶ Отменить последнее очко</button>
+  </div>
+</div>
+
+<div id="modal-menu" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">Меню</div>
+    <button class="modal-btn modal-btn-main" id="btn-menu-resume">Продолжить матч</button>
+    <button class="modal-btn modal-btn-danger" id="btn-menu-new">Новый матч</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="score.js"></script>
+</body>
+</html>
