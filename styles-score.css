@@ -1,0 +1,419 @@
+/* =====================================================
+   styles-score.css — score.html (standalone scorekeeper)
+   Same palette as styles-app.css: dark navy ground,
+   #1a5276→#2e86c1 blue gradient, gold serve accent.
+   Portrait, touch-first, no scroll at 360x690.
+   ===================================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { width: 100%; height: 100%; }
+
+body {
+  background: #0d0d1a;
+  background-image:
+    radial-gradient(ellipse at 20% 25%, rgba(74,111,165,.22) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 75%, rgba(26,82,118,.20) 0%, transparent 55%);
+  color: #f0f0f0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+
+button { font-family: inherit; cursor: pointer; }
+
+/* ── Screens ──────────────────────────────────────── */
+.screen { display: none; }
+.screen.active { display: flex; }
+
+/* ═══════════════════════════════════════════════════
+   SETUP SCREENS
+   ═══════════════════════════════════════════════════ */
+#screen-format, #screen-detail, #screen-server {
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+}
+
+.setup-inner {
+  width: min(340px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+.setup-logo  { font-size: 54px; line-height: 1; }
+.setup-title {
+  font-size: 34px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 16px rgba(46,134,193,.5);
+}
+.setup-sub {
+  font-size: 12px;
+  color: #7fb3d3;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.setup-crumb {
+  font-size: 12px;
+  color: #ffd700;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.setup-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7fb3d3;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 2px;
+}
+
+.opt-btn {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: #1e2a3a;
+  color: #e8f2ff;
+  border: 1px solid #3a6186;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+  padding: 8px 12px;
+}
+.opt-btn:active { filter: brightness(1.3); }
+.opt-btn small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8ab0cc;
+  letter-spacing: 0.02em;
+  margin-top: 3px;
+}
+.opt-back {
+  min-height: 44px;
+  font-size: 14px;
+  background: transparent;
+  border-color: #2a4a6a;
+  color: #7a9ab8;
+  box-shadow: none;
+  margin-top: 8px;
+}
+.opt-serve .ball { margin-right: 6px; filter: drop-shadow(0 0 6px rgba(255,215,0,.6)); }
+
+/* ═══════════════════════════════════════════════════
+   MATCH SCREEN
+   ═══════════════════════════════════════════════════ */
+#screen-match {
+  flex-direction: column;
+  min-height: 100dvh;
+  height: 100dvh;
+}
+
+/* ── Top bar ──────────────────────────────────────── */
+#top-bar {
+  flex: 0 0 auto;
+  min-height: 46px;
+  background: linear-gradient(90deg, #1a5276 0%, #2e86c1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  padding-top: max(4px, env(safe-area-inset-top));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 12px rgba(0,0,0,.45);
+}
+.icon-btn {
+  width: 36px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.25);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+}
+.icon-btn:active { background: rgba(0,0,0,.5); }
+.icon-btn:disabled { opacity: .35; }
+
+/* ── Scoreboard ───────────────────────────────────── */
+#scoreboard {
+  flex: 0 0 auto;
+  background: #12202f;
+  border-bottom: 1px solid #2a4a6a;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  border-radius: 8px;
+  padding: 0 6px;
+  background: #16222f;
+  border: 1px solid #24384a;
+}
+.sb-row.serving {
+  border-color: #6a5a20;
+  background: #1b2432;
+}
+.sb-serve {
+  width: 16px;
+  font-size: 13px;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(255,215,0,.8));
+}
+.sb-row.serving .sb-serve { opacity: 1; }
+.sb-name {
+  flex: 1 1 auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c8e0f8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-cells { display: flex; gap: 4px; flex: 0 0 auto; }
+.sb-cell {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: #1a2233;
+  color: #7a9ab8;
+  border: 1px solid #2a3f57;
+  padding: 0 4px;
+}
+.sb-cell.won { color: #e8f2ff; }
+.sb-cell.current {
+  background: linear-gradient(180deg, #1a5276, #2e86c1);
+  color: #fff;
+  border-color: #5dade2;
+  box-shadow: 0 0 10px rgba(46,134,193,.45);
+}
+.sb-cell sup {
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-left: 1px;
+  vertical-align: super;
+}
+
+/* ── Serve banner ─────────────────────────────────── */
+#serve-banner {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffd700;
+  background: rgba(255,215,0,.06);
+  border-bottom: 1px solid rgba(255,215,0,.16);
+}
+#serve-banner .tb-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #8e44ad;
+  color: #fff;
+  vertical-align: 1px;
+}
+
+/* ── Dials (swipe columns) ────────────────────────── */
+#dials {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+  position: relative;
+}
+.dial-divider {
+  width: 1px;
+  background: linear-gradient(180deg, transparent, #2a4a6a 20%, #2a4a6a 80%, transparent);
+  flex: 0 0 auto;
+}
+.dial {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  touch-action: none;
+  overflow: hidden;
+  padding: 6px 4px;
+  transition: background .15s;
+}
+.dial.pressed { background: rgba(46,134,193,.10); }
+.dial.nudge   { animation: nudge .3s ease; }
+@keyframes nudge {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-6px); }
+  75%     { transform: translateX(6px); }
+}
+.dial-value {
+  font-size: clamp(52px, 21vw, 104px);
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 24px rgba(46,134,193,.55);
+}
+.dial-value.ad   { color: #ffd700; text-shadow: 0 3px 24px rgba(255,215,0,.45); }
+.dial-value.roll-up   { animation: rollUp .22s ease; }
+.dial-value.roll-down { animation: rollDown .22s ease; }
+@keyframes rollUp {
+  0%   { transform: translateY(26px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+@keyframes rollDown {
+  0%   { transform: translateY(-26px); opacity: 0; }
+  100% { transform: translateY(0);     opacity: 1; }
+}
+.dial-ghost {
+  font-size: 20px;
+  font-weight: 800;
+  color: #5a7a9a;
+  opacity: .55;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  height: 24px;
+}
+.dial-ghost:empty::before { content: '·'; opacity: .3; }
+.dial-up::before   { content: '▲ '; font-size: 9px; vertical-align: 2px; }
+.dial-down::before { content: '▼ '; font-size: 9px; vertical-align: 2px; }
+.dial-name {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7a9ab8;
+}
+.dial.serving .dial-name { color: #ffd700; }
+
+/* ── Bottom bar ───────────────────────────────────── */
+#bottom-bar {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: 8px 10px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  border-top: 1px solid #24384a;
+  background: #12202f;
+}
+.hint {
+  font-size: 11px;
+  color: #5a7a9a;
+  letter-spacing: 0.03em;
+}
+
+/* ═══════════════════════════════════════════════════
+   MODALS + TOAST
+   ═══════════════════════════════════════════════════ */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(5,8,16,.82);
+  backdrop-filter: blur(3px);
+}
+.modal.open { display: flex; }
+.modal-box {
+  width: min(320px, 90vw);
+  background: #141c2c;
+  border: 1px solid #2a4a6a;
+  border-radius: 16px;
+  padding: 20px 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.6);
+}
+.modal-trophy { font-size: 46px; line-height: 1; }
+.modal-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.modal-text { font-size: 13px; color: #8ab0cc; line-height: 1.45; margin-bottom: 4px; }
+.modal-btn {
+  min-height: 48px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  background: #1e2a3a;
+  color: #e8f2ff;
+  border: 1px solid #3a6186;
+  padding: 8px 10px;
+}
+.modal-btn:active { filter: brightness(1.3); }
+.modal-btn-main {
+  background: linear-gradient(90deg, #1a7a2a, #25a035);
+  border-color: #30b040;
+  box-shadow: 0 4px 16px rgba(26,122,42,.45), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.modal-btn-danger { border-color: #7a3028; color: #ff8070; }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(12px);
+  z-index: 950;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(20,28,44,.96);
+  border: 1px solid #3a6186;
+  color: #c8e0f8;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Short screens: tighten up ────────────────────── */
+@media (max-height: 620px) {
+  .sb-row { height: 34px; }
+  .dial-name { margin-top: 4px; }
+  #serve-banner { padding: 5px 10px; font-size: 12px; }
+}
