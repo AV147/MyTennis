@@ -414,9 +414,20 @@ function showWinner() {
 }
 
 /* ── Модалки ──────────────────────────────────────── */
-function openModal(id)  { $(id).classList.add('open'); }
-function closeModal(id) { $(id).classList.remove('open'); }
-function closeModals()  { document.querySelectorAll('.modal').forEach((m) => m.classList.remove('open')); }
+/* Модалка открывается по pointerup от тапа, а следом браузер шлёт click в ту
+   же точку — и он попадает в кнопку, которая только что появилась под пальцем
+   (матчбол тапом закрывал окно победы через «Отменить последнее очко»).
+   Поэтому кнопки свежей модалки на MODAL_ARM_MS не кликаются. */
+const MODAL_ARM_MS = 450;
+
+function openModal(id) {
+  const m = $(id);
+  if (m.classList.contains('open')) return;   // уже открыта — защиту не перезапускаем
+  m.classList.add('open', 'arming');
+  setTimeout(() => m.classList.remove('arming'), MODAL_ARM_MS);
+}
+function closeModal(id) { $(id).classList.remove('open', 'arming'); }
+function closeModals()  { document.querySelectorAll('.modal').forEach((m) => m.classList.remove('open', 'arming')); }
 
 /* ═══════════════════════════════════════════════════
    СОХРАНЕНИЕ

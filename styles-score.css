@@ -353,6 +353,8 @@ button { font-family: inherit; cursor: pointer; }
   backdrop-filter: blur(3px);
 }
 .modal.open { display: flex; }
+/* защита от «сквозного» клика тапа, который открыл эту модалку (см. score.js) */
+.modal.arming .modal-btn { pointer-events: none; }
 .modal-box {
   width: min(320px, 90vw);
   background: #141c2c;
