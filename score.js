@@ -7,6 +7,8 @@
      set1 — один сет (из 4, 6 или 8 геймов)
      bo3  — до 2 побед в сетах (сет из 4 или 6)
      bo5  — до 3 побед в сетах (сет из 4 или 6)
+     free — произвольный счёт: бесконечный тай-брейк без подачи,
+            геймов и победителя (счёт розыгрышей на тренировке)
 
    Сет: выигрыш при setGames геймах с отрывом в 2;
         при равенстве setGames-setGames — тай-брейк до 7.
@@ -77,6 +79,7 @@ function currentServer(s) {
 function awardPoint(s, w) {
   if (s.winner !== null || s.needDecider) return;
   s.points[w]++;
+  if (s.cfg.mode === 'free') return;   // просто счётчик розыгрышей
   const a = s.points[w], b = s.points[1 - w];
 
   if (s.inTB) {
@@ -142,7 +145,7 @@ function applyDecider(s, choice) {
 
 /* ── Отображение очков в гейме ────────────────────── */
 function pointLabel(s, i) {
-  if (s.inTB) return String(s.points[i]);
+  if (s.inTB || s.cfg.mode === 'free') return String(s.points[i]);
   const a = s.points[i], b = s.points[1 - i];
   if (a >= 3 && b >= 3) {
     if (a === b) return '40';
@@ -210,7 +213,7 @@ const DETAIL_OPTIONS = {
   }
 };
 
-const SETS_TO_WIN = { tb: 1, set1: 1, bo3: 2, bo5: 3 };
+const SETS_TO_WIN = { tb: 1, set1: 1, bo3: 2, bo5: 3, free: 1 };
 
 function openDetail(mode) {
   pendingCfg = { mode: mode, setsToWin: SETS_TO_WIN[mode], setGames: 6, tbTarget: 7 };
@@ -290,6 +293,7 @@ function newMatch() {
    ═══════════════════════════════════════════════════ */
 function formatLabel() {
   const c = S.cfg;
+  if (c.mode === 'free') return 'Произвольный счёт';
   if (c.mode === 'tb') return 'Тайбрейк до ' + c.tbTarget;
   if (c.mode === 'set1' && c.setGames === 8) return 'Расширенный сет · 8';
   return FORMAT_TITLES[c.mode] + ' · из ' + c.setGames;
@@ -346,12 +350,19 @@ function render(anim, animPlayer) {
   if (!S) return;
   $('format-label').textContent = formatLabel();
   $('btn-undo').disabled = !HIST.length;
-  renderScoreboard();
 
-  const srv = currentServer(S);
+  // «Произвольный»: ни табло по геймам, ни подачи — только два счётчика
+  const free = S.cfg.mode === 'free';
+  $('scoreboard').style.display   = free ? 'none' : '';
+  $('serve-banner').style.display = free ? 'none' : '';
+  if (!free) renderScoreboard();
+
+  const srv = free ? -1 : currentServer(S);
 
   // подача
-  if (S.winner !== null) {
+  if (free) {
+    /* баннер скрыт */
+  } else if (S.winner !== null) {
     $('serve-banner').innerHTML = '<span>Матч окончен</span>';
   } else if (S.needDecider) {
     $('serve-banner').innerHTML = '<span>Решающий сет — выберите формат</span>';
@@ -479,7 +490,15 @@ function nudge(el) {
    INIT
    ═══════════════════════════════════════════════════ */
 document.querySelectorAll('[data-mode]').forEach((b) => {
-  b.addEventListener('click', () => openDetail(b.dataset.mode));
+  b.addEventListener('click', () => {
+    if (b.dataset.mode === 'free') {
+      // без деталей и без выбора подающего — сразу к счётчику
+      pendingCfg = { mode: 'free', setsToWin: 1, setGames: 6, tbTarget: 7 };
+      startMatch(0);
+    } else {
+      openDetail(b.dataset.mode);
+    }
+  });
 });
 document.querySelectorAll('[data-back]').forEach((b) => {
   b.addEventListener('click', () => {

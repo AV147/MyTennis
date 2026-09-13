@@ -16,7 +16,7 @@ body {
     radial-gradient(ellipse at 80% 75%, rgba(26,82,118,.20) 0%, transparent 55%);
   color: #f0f0f0;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   min-height: 100dvh;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -57,14 +57,14 @@ button { font-family: inherit; cursor: pointer; }
   text-shadow: 0 2px 16px rgba(46,134,193,.5);
 }
 .setup-sub {
-  font-size: 12px;
+  font-size: 14px;
   color: #7fb3d3;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
 .setup-crumb {
-  font-size: 12px;
+  font-size: 14px;
   color: #ffd700;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -72,7 +72,7 @@ button { font-family: inherit; cursor: pointer; }
   margin-bottom: 6px;
 }
 .setup-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: #7fb3d3;
   text-transform: uppercase;
@@ -84,7 +84,7 @@ button { font-family: inherit; cursor: pointer; }
   width: 100%;
   min-height: 54px;
   border-radius: 12px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.02em;
   background: #1e2a3a;
@@ -96,7 +96,7 @@ button { font-family: inherit; cursor: pointer; }
 .opt-btn:active { filter: brightness(1.3); }
 .opt-btn small {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: #8ab0cc;
   letter-spacing: 0.02em;
@@ -104,7 +104,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .opt-back {
   min-height: 44px;
-  font-size: 14px;
+  font-size: 16px;
   background: transparent;
   border-color: #2a4a6a;
   color: #7a9ab8;
@@ -134,7 +134,7 @@ button { font-family: inherit; cursor: pointer; }
   padding: 4px 8px;
   padding-top: max(4px, env(safe-area-inset-top));
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -147,7 +147,7 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px solid rgba(255,255,255,.22);
   background: rgba(0,0,0,.25);
   color: #fff;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1;
 }
 .icon-btn:active { background: rgba(0,0,0,.5); }
@@ -179,14 +179,14 @@ button { font-family: inherit; cursor: pointer; }
 }
 .sb-serve {
   width: 16px;
-  font-size: 13px;
+  font-size: 15px;
   opacity: 0;
   filter: drop-shadow(0 0 6px rgba(255,215,0,.8));
 }
 .sb-row.serving .sb-serve { opacity: 1; }
 .sb-name {
   flex: 1 1 auto;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #c8e0f8;
   white-space: nowrap;
@@ -201,7 +201,7 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   background: #1a2233;
@@ -217,7 +217,7 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 0 10px rgba(46,134,193,.45);
 }
 .sb-cell sup {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   color: #ffd700;
   margin-left: 1px;
@@ -229,7 +229,7 @@ button { font-family: inherit; cursor: pointer; }
   flex: 0 0 auto;
   text-align: center;
   padding: 7px 10px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: #ffd700;
@@ -241,7 +241,7 @@ button { font-family: inherit; cursor: pointer; }
   margin-left: 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: #8e44ad;
@@ -302,20 +302,20 @@ button { font-family: inherit; cursor: pointer; }
   100% { transform: translateY(0);     opacity: 1; }
 }
 .dial-ghost {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: #5a7a9a;
   opacity: .55;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
-  height: 24px;
+  height: 28px;
 }
 .dial-ghost:empty::before { content: '·'; opacity: .3; }
-.dial-up::before   { content: '▲ '; font-size: 9px; vertical-align: 2px; }
-.dial-down::before { content: '▼ '; font-size: 9px; vertical-align: 2px; }
+.dial-up::before   { content: '▲ '; font-size: 11px; vertical-align: 2px; }
+.dial-down::before { content: '▼ '; font-size: 11px; vertical-align: 2px; }
 .dial-name {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -333,7 +333,7 @@ button { font-family: inherit; cursor: pointer; }
   background: #12202f;
 }
 .hint {
-  font-size: 11px;
+  font-size: 13px;
   color: #5a7a9a;
   letter-spacing: 0.03em;
 }
@@ -367,16 +367,16 @@ button { font-family: inherit; cursor: pointer; }
 }
 .modal-trophy { font-size: 46px; line-height: 1; }
 .modal-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   color: #fff;
   letter-spacing: 0.02em;
 }
-.modal-text { font-size: 13px; color: #8ab0cc; line-height: 1.45; margin-bottom: 4px; }
+.modal-text { font-size: 15px; color: #8ab0cc; line-height: 1.45; margin-bottom: 4px; }
 .modal-btn {
   min-height: 48px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   background: #1e2a3a;
   color: #e8f2ff;
@@ -402,7 +402,7 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(20,28,44,.96);
   border: 1px solid #3a6186;
   color: #c8e0f8;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   opacity: 0;
@@ -415,5 +415,5 @@ button { font-family: inherit; cursor: pointer; }
 @media (max-height: 620px) {
   .sb-row { height: 34px; }
   .dial-name { margin-top: 4px; }
-  #serve-banner { padding: 5px 10px; font-size: 12px; }
+  #serve-banner { padding: 5px 10px; font-size: 14px; }
 }
